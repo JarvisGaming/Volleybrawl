@@ -20,7 +20,7 @@ export default defineConfig([
 		},
 		languageOptions: {
 			ecmaVersion: 2021,
-			globals: { ...globals.browser, $: 'readonly', jquery: 'readonly', jQuery: 'readonly' }
+			globals: { ...globals.browser, $: 'readonly', jquery: 'readonly', jQuery: 'readonly', io: 'readonly', require: 'readonly' }
 		}
 	}
 ]);

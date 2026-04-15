@@ -2,7 +2,6 @@
 <html>
 <head>
     <title>Volleybrawl</title>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <link href="reset.css" rel="stylesheet">
     <link href="style.css" rel="stylesheet">
 </head>
@@ -86,15 +85,9 @@
     </div>
 
     <!-- JavaScript files for the hand game -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
-    <script src="scripts/hand_game.js"></script>
-
-    <!-- Initialize the game -->
-    <script>
-    $(function() {
-        // Initialize the hand game functionalities
-        HandGame.init();
-    });
-    </script>
+    <script src="scripts/hand_game.js" defer></script>
+    
 </body>
 </html>

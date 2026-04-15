@@ -1,6 +1,7 @@
 const HandGame = (function() {
+	const socket = io();
 	let inGame = false;
-
+	
 	const initConnectPage = function() {
 		// Show the connection error to Socket.IO
 		socket.on("connect_error", (error) => {
@@ -30,14 +31,14 @@ const HandGame = (function() {
 			e.preventDefault();
 
 			// Prepare the player name
-			name = $("#join-name").val().trim();
-			if (name == "") {
+			let playerName = $("#join-name").val().trim();
+			if (playerName == "") {
 				$("#join-message").text("Your name is empty.");
 				return;
 			}
 			
 			// Send the WebSocket message to the server
-			socket.emit("join", name);
+			socket.emit("join", playerName);
 		});
 
 		// Handle the error for the join request
@@ -99,7 +100,7 @@ const HandGame = (function() {
 			updatePlayers(players);
 		});
 
-		$("#ready-button").on("click", function(e) {
+		$("#ready-button").on("click", function() {
 			// Send the WebSocket message to the server
 			socket.emit("ready");
 
@@ -136,6 +137,8 @@ const HandGame = (function() {
 
 			// Check whether you win the game
 			const signs = [0, 0, 0];
+			let yourSign;
+
 			for (const id in players) {
 				switch (players[id]["sign"]) {
 					case "rock":
@@ -165,19 +168,18 @@ const HandGame = (function() {
 			$("#restart-button").show();
 		});
 
-		$("#restart-button").on("click", function(e) {
+		$("#restart-button").on("click", function() {
 			// Reload the page
 			window.location.reload();
 		});
 	};
 
 	const init = function() {
-		// Connect to the Socket.IO socket
-		socket = io();
-
 		// Initialize connect page related events
 		initConnectPage();
 	};
 
 	return { init };
 })();
+
+HandGame.init();
