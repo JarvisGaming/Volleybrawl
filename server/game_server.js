@@ -1,3 +1,5 @@
+// Start with node server/game_server.js at root directory
+
 const express = require("express");
 
 // Create the Express app
