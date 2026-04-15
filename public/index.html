@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rock, Paper, Scissors</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <link href="style.css" rel="stylesheet">
+</head>
+<body>
+    <!-- The hand game -->
+    <div id="hand-game-area">
+
+        <!-- The connect page -->
+        <div id="hand-game-connect-page">
+            <div class="row">
+                <div class="col">
+                    <div class="title">Connecting...</div>
+                    <div id="connect-message" class="message"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- The join page -->
+        <div id="hand-game-join-page" style="display: none">
+            <div class="row">
+                <div class="title col">
+                    <div>Rock &#x270a;</div>
+                    <div>Paper &#x270b;</div>
+                    <div>Scissors &#x270c;</div>
+                </div>
+                <div class="col">
+                    <form id="join-form" class="col">
+                        <div class="caption">What's your name?</div>
+                        <input id="join-name" maxlength="10" placeholder="Enter your name"></input>
+                        <button id="join-button">Join</button>
+                    </form>
+                    <div id="join-message" class="message"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- The main page -->
+        <div id="hand-game-main-page" style="display: none">
+            <div class="row">
+                <div class="col">
+                    <div class="title">Rock, Paper, Scissors</div>
+                    <div class="row players">
+                        <div id="player1" class="col player" style="display: none">
+                            <img src="images/unknown_signs.png" alt="Sign" class="sign">
+                            <div class="status">Peter is not yet ready...</div>
+                        </div>
+                        <div id="player2" class="col player" style="display: none">
+                            <img src="images/unknown_signs.png" alt="Sign" class="sign">
+                            <div class="status">Peter is not yet ready...</div>
+                        </div>
+                        <div id="player3" class="col player" style="display: none">
+                            <img src="images/unknown_signs.png" alt="Sign" class="sign">
+                            <div class="status">Peter is not yet ready...</div>
+                        </div>
+                        <div id="player4" class="col player" style="display: none">
+                            <img src="images/unknown_signs.png" alt="Sign" class="sign">
+                            <div class="status">Peter is not yet ready...</div>
+                        </div>
+                    </div>
+                    <button id="ready-button">Get Ready!</button>
+                    <div id="game-message" class="message"></div>
+                    <button id="restart-button" style="display: none">Start Again!</button>
+                </div>
+            </div>
+            <div id="sign-buttons" class="col" style="display: none">
+                <div class="caption">Select your sign:</div>
+                <div class="row">
+                    <button data-sign="rock" class="sign-button">
+                        <img src="images/rock.png" alt="Rock" class="sign">
+                    </button>
+                    <button data-sign="paper" class="sign-button">
+                        <img src="images/paper.png" alt="Paper" class="sign">
+                    </button>
+                    <button data-sign="scissors" class="sign-button">
+                        <img src="images/scissors.png" alt="Scissors" class="sign">
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JavaScript files for the hand game -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="scripts/hand_game.js"></script>
+
+    <!-- Initialize the game -->
+    <script>
+    $(function() {
+        // Initialize the hand game functionalities
+        HandGame.init();
+    });
+    </script>
+</body>
+</html>
