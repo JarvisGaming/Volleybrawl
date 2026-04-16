@@ -43,19 +43,20 @@ form button {
     font-size: 60px;
     font-weight: bold;
     text-align: center;
-    padding: 40px 0;
+    /* padding: 40px 0; */
 }
 
 .subtitle {
     font-size: 40px;
     font-weight: bold;
     text-align: center;
-    padding: 30px 0;
+    /* padding: 30px 0; */
 }
 
 .message {
     text-align: center;
     font-style: italic;
+    padding: 10px 0;
 }
 
 /*
