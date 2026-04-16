@@ -14,25 +14,10 @@ app.use(express.static("public"));
 // Create the Socket.IO server
 const { createServer } = require("http");
 const { Server } = require("socket.io");
-const { join } = require("path");
 const httpServer = createServer(app);
 const io = new Server(httpServer);
 
-let rooms = {
-	"room1": {
-		roomID: "room1",
-		players: {},
-	},
-	"room2": {
-		roomID: "room2",
-		players: {},
-	},
-	"room3": {
-		roomID: "room3",
-		players: {},
-	},
-};
-
+let rooms = {};
 let players = {};
 
 // Handle the web socket connection
@@ -51,9 +36,8 @@ io.on("connection", (socket) => {
 		let oldRoomID = players[socket.id].joinedRoomID;
 		let oldRoom = rooms[oldRoomID];
 		players[socket.id].joinedRoomID = null;
-		
+
 		if (oldRoom != null){
-			socket.leave(oldRoom.roomID);
 			delete oldRoom.players[socket.id];
 
 			// Delete room if there are no players in it
@@ -66,10 +50,23 @@ io.on("connection", (socket) => {
 	// Make current player join a new room
 	function joinNewRoom(roomID){
 		let newRoom = rooms[roomID];
-		socket.join(newRoom.roomID);
 		newRoom.players[socket.id] = { name: players[socket.id].name, ready: false };
 		players[socket.id].joinedRoomID = newRoom.roomID;
 	}
+
+	socket.on("create_room", () => {
+		let roomID = crypto.randomUUID();
+		rooms[roomID] = { roomID: roomID, players: {} };
+
+		leaveOldRoom();
+		joinNewRoom(roomID);
+
+		socket.emit("room_page_success", "Successfully created a new room.");
+		io.emit("update_rooms", rooms);
+
+		console.dir({rooms, players}, { depth: null });
+	});
+
 
 	socket.on("join_room", (roomID) => {
 		if (players[socket.id].joinedRoomID === roomID) {
@@ -115,6 +112,16 @@ io.on("connection", (socket) => {
 		newRoom.players[socket.id].ready = !newRoom.players[socket.id].ready;
 		io.emit("update_rooms", rooms);
 		socket.emit("room_page_success", "You are " + (newRoom.players[socket.id].ready ? "ready" : "not ready") + ".");
+
+		console.dir({rooms, players}, { depth: null });
+	});
+
+	socket.on("disconnect", () => {
+		if (!players[socket.id].inGame) {
+			leaveOldRoom();
+			delete players[socket.id];
+			io.emit("update_rooms", rooms);
+		}
 
 		console.dir({rooms, players}, { depth: null });
 	});

@@ -59,6 +59,11 @@ const HandGame = (function() {
 	};
 
 	const initRoomPage = function() {
+		// Not included in setRoomButtons() since it is not dynamically generated, so we don't need to re-attach event handlers to it
+		$("#create-room-button").on("click", function() {
+			socket.emit("create_room");
+		});
+		
 		function setRoomButtons(){
 			$(".join-room-button").on("click", function(e) {
 				socket.emit("join_room", $(e.currentTarget).attr("data-roomid"));
