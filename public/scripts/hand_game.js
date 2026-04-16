@@ -80,15 +80,11 @@ const HandGame = (function() {
 			});
 		}
 
-		socket.on("join_room_success", (msg) => {
+		socket.on("room_page_success", (msg) => {
 			$("#room-message").text(msg);
 		});
 
-		socket.on("join_room_error", (msg) => {
-			$("#room-message").text(msg);
-		});
-
-		socket.on("ready_error", (msg) => {
+		socket.on("room_page_error", (msg) => {
 			$("#room-message").text(msg);
 		});
 
@@ -106,10 +102,18 @@ const HandGame = (function() {
 				roomElement.find(".join-room-button").attr("data-roomid", room.roomID);
 				roomElement.find(".ready-button").attr("data-roomid", room.roomID);
 
+				const players = Object.values(room.players);
 				const playerNames = Object.values(room.players).map((player) => player.name);
 				console.log(playerNames);
-				if (playerNames.at(0) != undefined) roomElement.find(".player1-name").text(playerNames.at(0));
-				if (playerNames.at(1) != undefined) roomElement.find(".player2-name").text(playerNames.at(1));
+
+				if (playerNames.at(0) != undefined) {
+					roomElement.find(".player1-name").text(playerNames.at(0));
+					if (players.at(0).ready) roomElement.find(".player1-name").addClass("ready");
+				}
+				if (playerNames.at(1) != undefined) {
+					roomElement.find(".player2-name").text(playerNames.at(1));
+					if (players.at(1).ready) roomElement.find(".player2-name").addClass("ready");
+				}
 
 				$("#room-listing").append(roomElement);
 			}

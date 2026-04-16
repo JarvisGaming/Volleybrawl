@@ -40,8 +40,9 @@ io.on("connection", (socket) => {
 	socket.on("join", (playerName) => {
 		players[socket.id] = { name: playerName, joinedRoomID: null, inGame: false };
 		socket.emit("join_success");
-		console.dir(players, { depth: null });
 		socket.emit("update_rooms", rooms);
+
+		console.dir({rooms, players}, { depth: null });
 	});
 
 	socket.on("join_room", (roomID) => {
@@ -50,7 +51,7 @@ io.on("connection", (socket) => {
 		let newRoom = rooms[roomID];
 
 		if (Object.keys(newRoom.players).length >= 2) {
-			socket.emit("join_room_error", "The room is full already.");
+			socket.emit("room_page_error", "The room is full already.");
 			return;
 		}
 		
@@ -64,21 +65,24 @@ io.on("connection", (socket) => {
 
 		players[socket.id].joinedRoomID = newRoom.roomID;
 
-		socket.emit("join_room_success", "Successfully joined the room.");
+		socket.emit("room_page_success", "Successfully joined the room.");
 		io.emit("update_rooms", rooms);
-		console.dir(rooms, { depth: null });
+
+		console.dir({rooms, players}, { depth: null });
 	});
 
 	socket.on("ready", (roomID) => {
 		if (players[socket.id].joinedRoomID != roomID) {
-			socket.emit("ready_error", "You can't ready up in a room you haven't joined.");
+			socket.emit("room_page_error", "You can't ready up in a room you haven't joined.");
 			return;
 		}
 
 		let newRoom = rooms[roomID];
 		newRoom.players[socket.id].ready = !newRoom.players[socket.id].ready;
 		io.emit("update_rooms", rooms);
-		console.dir(rooms, { depth: null });
+		socket.emit("room_page_success", "You are " + (newRoom.players[socket.id].ready ? "ready" : "not ready") + ".");
+
+		console.dir({rooms, players}, { depth: null });
 	});
 });
 

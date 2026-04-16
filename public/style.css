@@ -145,3 +145,9 @@ img.sign {
 .join-room-button, .ready-button {
     width: 100px;
 }
+
+.ready::after {
+    content: " (Ready)";
+    color: green;
+    font-weight: bold;
+}
