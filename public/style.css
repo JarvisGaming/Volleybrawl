@@ -43,14 +43,11 @@ form button {
     font-size: 60px;
     font-weight: bold;
     text-align: center;
-    /* padding: 40px 0; */
 }
 
-.subtitle {
-    font-size: 40px;
+.caption {
+    font-size: 30px;
     font-weight: bold;
-    text-align: center;
-    /* padding: 30px 0; */
 }
 
 .message {
@@ -60,18 +57,18 @@ form button {
 }
 
 /*
- * Hand game rules
+ * Hand game rules (left over from lab6)
  */
 
-#hand-game-area {
+body {
     width: 100vw;
     height: 100vh;
     padding: 0;
 }
 
-#hand-game-connect-page,
-#hand-game-join-page,
-#hand-game-main-page {
+#connect-page,
+#join-page,
+#room-listing-page {
     display: flex;
     align-items: stretch;
     justify-content: center;
@@ -80,46 +77,9 @@ form button {
     flex-direction: column;
 }
 
-.caption {
-    font-size: 30px;
-    font-weight: bold;
-}
-
 #join-form {
     width: 50%;
     min-width: 400px;
-}
-
-.players {
-    flex-wrap: wrap;
-}
-
-.player {
-    flex: 1 1 calc(50% - 45px);
-    font-size: 20px;
-    width: 300px;
-}
-
-.player .status {
-    font-style: italic;
-}
-
-img.sign {
-    width: 150px;
-    height: 150px;
-}
-
-#sign-buttons {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%,-50%);
-    border-radius: 50px;
-    background: rgba(255, 255, 255, 0.8);
-}
-
-#game-message {
-    font-size: 30px;
 }
 
 /* Room listing */

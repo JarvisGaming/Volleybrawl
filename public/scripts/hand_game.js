@@ -10,8 +10,8 @@ const HandGame = (function() {
 		// Wait for the socket to connect successfully
 		socket.on("connect", () => {
 			// Show the join page
-			$("#hand-game-connect-page").hide();
-			$("#hand-game-join-page").show();
+			$("#connect-page").hide();
+			$("#join-page").show();
 
 			// Initialize join page related events
 			initJoinPage();
@@ -49,8 +49,8 @@ const HandGame = (function() {
 		// The player joins the game successfully
 		socket.on("join_success", () => {
 			// Show the main page if successfully joined
-			$("#hand-game-join-page").hide();
-			$("#hand-game-main-page").show();
+			$("#join-page").hide();
+			$("#room-listing-page").show();
 
 			// Initialize main page related events
 			initRoomPage();
@@ -82,6 +82,7 @@ const HandGame = (function() {
 			// Empty out listing
 			$("#room-listing").empty();
 
+			// Re-populate room listing with up-to-date information
 			for (const room of Object.values(rooms)) {
 				// Clone template element
 				const roomElement = $($("#room-template").html());
