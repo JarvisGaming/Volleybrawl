@@ -1,11 +1,10 @@
 // Run with node server/server.js at root directory
 
-const gameListingController = require("./lobby_controller");
+const roomController = require("./room_controller.js");
 
-const express = require("express");
-const crypto = require("crypto");
 
 // Create the Express app
+const express = require("express");
 const app = express();
 
 // Use the 'public' folder to serve static files
@@ -17,114 +16,17 @@ const { Server } = require("socket.io");
 const httpServer = createServer(app);
 const io = new Server(httpServer);
 
-let rooms = {};
 let players = {};
 
 // Handle the web socket connection
 io.on("connection", (socket) => {
-	// Join game and enter game listing page
-	socket.on("join", (playerName) => {
-		players[socket.id] = { name: playerName, joinedRoomID: null, inGame: false };
-		socket.emit("join_success");
-		socket.emit("update_rooms", rooms);
-
-		console.dir({rooms, players}, { depth: null });
-	});
-
-	// Make current player leave an already joined room (if any)
-	function leaveOldRoom(){
-		let oldRoomID = players[socket.id].joinedRoomID;
-		let oldRoom = rooms[oldRoomID];
-		players[socket.id].joinedRoomID = null;
-
-		if (oldRoom != null){
-			delete oldRoom.players[socket.id];
-
-			// Delete room if there are no players in it
-			if (Object.keys(oldRoom.players).length == 0) {
-				delete rooms[oldRoomID];
-			}
-		}
-	}
-
-	// Make current player join a new room
-	function joinNewRoom(roomID){
-		let newRoom = rooms[roomID];
-		newRoom.players[socket.id] = { name: players[socket.id].name, ready: false };
-		players[socket.id].joinedRoomID = newRoom.roomID;
-	}
-
-	socket.on("create_room", () => {
-		let roomID = crypto.randomUUID();
-		rooms[roomID] = { roomID: roomID, players: {} };
-
-		leaveOldRoom();
-		joinNewRoom(roomID);
-
-		socket.emit("room_page_success", "Successfully created a new room.");
-		io.emit("update_rooms", rooms);
-
-		console.dir({rooms, players}, { depth: null });
-	});
-
-
-	socket.on("join_room", (roomID) => {
-		if (players[socket.id].joinedRoomID === roomID) {
-			socket.emit("room_page_error", "You are already in this room.");
-			return;
-		}
-
-		if (Object.keys(rooms[roomID].players).length >= 2) {
-			socket.emit("room_page_error", "The room is full already.");
-			return;
-		}
-		
-		leaveOldRoom();
-		joinNewRoom(roomID);
-
-		socket.emit("room_page_success", "Successfully joined the room.");
-		io.emit("update_rooms", rooms);
-
-		console.dir({rooms, players}, { depth: null });
-	});
-
-	socket.on("leave_room", (roomID) => {
-		if (players[socket.id].joinedRoomID != roomID) {
-			socket.emit("room_page_error", "You can't leave a room you haven't joined.");
-			return;
-		}
-
-		leaveOldRoom();
-
-		socket.emit("room_page_success", "Successfully left the room.");
-		io.emit("update_rooms", rooms);
-
-		console.dir({rooms, players}, { depth: null });
-	});
-
-	socket.on("ready", (roomID) => {
-		if (players[socket.id].joinedRoomID != roomID) {
-			socket.emit("room_page_error", "You can't ready up in a room you haven't joined.");
-			return;
-		}
-
-		let newRoom = rooms[roomID];
-		newRoom.players[socket.id].ready = !newRoom.players[socket.id].ready;
-		io.emit("update_rooms", rooms);
-		socket.emit("room_page_success", "You are " + (newRoom.players[socket.id].ready ? "ready" : "not ready") + ".");
-
-		console.dir({rooms, players}, { depth: null });
-	});
-
-	socket.on("disconnect", () => {
-		if (!players[socket.id].inGame) {
-			leaveOldRoom();
-			delete players[socket.id];
-			io.emit("update_rooms", rooms);
-		}
-
-		console.dir({rooms, players}, { depth: null });
-	});
+	// Room controller
+	socket.on("join", (playerName) => roomController.enterGameListPage(socket, players, playerName));
+	socket.on("create_room", () => roomController.createRoom(socket, io, players));
+	socket.on("join_room", (roomID) => roomController.joinRoom(socket, io, players, roomID));
+	socket.on("leave_room", (roomID) => roomController.leaveRoom(socket, io, players, roomID));
+	socket.on("ready", (roomID) => roomController.readyUp(socket, io, players, roomID));
+	socket.on("disconnect", () => roomController.disconnectInRoom(socket, io, players));
 });
 
 // Use a web server to listen at port 8000

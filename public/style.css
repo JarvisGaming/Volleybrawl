@@ -129,6 +129,7 @@ img.sign {
     flex-direction: column;
     align-items: center;
     gap: 20px;
+    margin: 20px 0;
 }
 
 .room {
@@ -141,6 +142,10 @@ img.sign {
     border: 2px solid black;
     padding: 20px;
     gap: 20px;
+}
+
+#create-room-button {
+    align-self: center;
 }
 
 .join-room-button, .ready-button {
