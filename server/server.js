@@ -50,9 +50,16 @@ io.on("connection", (socket) => {
 	function leaveOldRoom(){
 		let oldRoomID = players[socket.id].joinedRoomID;
 		let oldRoom = rooms[oldRoomID];
+		players[socket.id].joinedRoomID = null;
+		
 		if (oldRoom != null){
 			socket.leave(oldRoom.roomID);
 			delete oldRoom.players[socket.id];
+
+			// Delete room if there are no players in it
+			if (Object.keys(oldRoom.players).length == 0) {
+				delete rooms[oldRoomID];
+			}
 		}
 	}
 
