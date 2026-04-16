@@ -1,32 +1,3 @@
-const playerJoin = (socket, io, gameState, name) => {
-	// 1. The player should not join the game when a game has already started
-	if (gameState.gameStarted){
-		socket.emit("join_error", "A game has started. Please try again later.");
-		return;
-	}
-
-	// 2. The player should not join when there are already 2 players in the game
-	if (Object.keys(gameState.players).length == 2){
-		socket.emit("join_error", "The game is full already. Please try again later.");
-		return;
-	}
-
-	// 3. The player should not join when another player in the game has used the same name
-	for (const player of Object.values(gameState.players)){
-		if (player.name == name){
-			socket.emit("join_error", "The name has already been used in the game.");
-			return;
-		}
-	}
-
-	// Put the player in the players object
-	gameState.players[socket.id] = { name, ready: false };
-	socket.emit("join_success");
-	io.to(gameState.roomID).emit("update_players", gameState.players);
-
-	console.log("Current players -", gameState.players); // DON'T DELETE - FOR MARKING
-};
-
 const startGame = function(io, gameState) {
 	io.emit("game_start");
 	gameState.gameStarted = true;
@@ -80,4 +51,4 @@ const playerDisconnect = (socket, io, gameState) => {
 	}
 };
 
-module.exports = { playerJoin, playerReady, chooseSign, playerDisconnect };
+module.exports = { playerReady, chooseSign, playerDisconnect };

@@ -30,53 +30,56 @@ let rooms = {
 	},
 };
 
-let roomState = {
-	roomID: "room1",
-
-	// A JavaScript object storing the players in a particular match
-	// { socketId: Player }
-	players: {},
-
-	// Indicate whether a game has started
-	gameStarted: false,
-};
+let players = {};
 
 // Handle the web socket connection
 io.on("connection", (socket) => {
 	console.log("Player connected:", socket.id);
-	socket.join(roomState.roomID);
 
 	// Wait for a player to join the game
-	socket.on("join", (name) => lobbyController.playerJoin(socket, io, roomState, name));
+	socket.on("join", (playerName) => {
+		players[socket.id] = { name: playerName, joinedRoomID: null, inGame: false };
+		socket.emit("join_success");
+		console.dir(players, { depth: null });
+		socket.emit("update_rooms", rooms);
+	});
 
 	socket.on("join_room", (roomID) => {
-		socket.leave(roomState.roomID);
-		delete roomState.players[socket.id];
+		let oldRoomID = players[socket.id].joinedRoomID;
+		let oldRoom = rooms[oldRoomID];
+		let newRoom = rooms[roomID];
 
-		roomState = rooms[roomID];
-		socket.join(roomState.roomID);
-		roomState.players[socket.id] = { name: "Player", ready: false };
+		if (Object.keys(newRoom.players).length >= 2) {
+			socket.emit("join_room_error", "The room is full already.");
+			return;
+		}
+		
+		if (oldRoom != null){
+			socket.leave(oldRoom.roomID);
+			delete oldRoom.players[socket.id];
+		}
+		
+		socket.join(newRoom.roomID);
+		newRoom.players[socket.id] = { name: players[socket.id].name, ready: false };
 
-		socket.emit("join_room_success");
+		players[socket.id].joinedRoomID = newRoom.roomID;
+
+		socket.emit("join_room_success", "Successfully joined the room.");
 		io.emit("update_rooms", rooms);
 		console.dir(rooms, { depth: null });
 	});
 
 	socket.on("ready", (roomID) => {
-		roomState = rooms[roomID];
-		roomState.players[socket.id].ready = !roomState.players[socket.id].ready;
+		if (players[socket.id].joinedRoomID != roomID) {
+			socket.emit("ready_error", "You can't ready up in a room you haven't joined.");
+			return;
+		}
+
+		let newRoom = rooms[roomID];
+		newRoom.players[socket.id].ready = !newRoom.players[socket.id].ready;
 		io.emit("update_rooms", rooms);
 		console.dir(rooms, { depth: null });
 	});
-
-	// Wait for a player to get ready in the game
-	// socket.on("ready", () => lobbyController.playerReady(socket, io, roomState));
-
-	// Set up the choose event
-	// socket.on("choose", (sign) => lobbyController.chooseSign(socket, io, roomState, sign));
-
-	// In case a player is disconnected from the game
-	// socket.on("disconnect", () => lobbyController.playerDisconnect(socket, io, roomState));
 });
 
 // Use a web server to listen at port 8000

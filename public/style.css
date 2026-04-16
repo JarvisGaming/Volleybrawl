@@ -141,3 +141,7 @@ img.sign {
     padding: 20px;
     gap: 20px;
 }
+
+.join-room-button, .ready-button {
+    width: 100px;
+}
