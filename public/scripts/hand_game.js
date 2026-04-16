@@ -1,7 +1,6 @@
 const HandGame = (function() {
 	const socket = io();
-	// let inGame = false;
-	
+
 	const initConnectPage = function() {
 		// Show the connection error to Socket.IO
 		socket.on("connect_error", (error) => {
@@ -62,23 +61,50 @@ const HandGame = (function() {
 	const initRoomPage = function() {
 		function setRoomButtons(){
 			$(".join-room-button").on("click", function(e) {
-				// Do not submit the form
-				e.preventDefault();
-	
-				// Send the WebSocket message to the server
-				console.log($(e.currentTarget).attr("data-roomid"));
 				socket.emit("join_room", $(e.currentTarget).attr("data-roomid"));
+			});
+
+			$(".leave-room-button").on("click", function(e) {
+				socket.emit("leave_room", $(e.currentTarget).attr("data-roomid"));
 			});
 	
 			$(".ready-button").on("click", function(e) {
-				// Do not submit the form
-				e.preventDefault();
-	
-				// Send the WebSocket message to the server
 				socket.emit("ready", $(e.currentTarget).attr("data-roomid"));
-	
 			});
 		}
+
+		socket.on("update_rooms", (rooms) => {
+			// Empty out listing
+			$("#room-listing").empty();
+
+			for (const room of Object.values(rooms)) {
+				// Clone template element
+				const roomElement = $($("#room-template").html());
+
+				// Add back roomID information
+				roomElement.attr("data-roomid", room.roomID);
+				roomElement.find(".join-room-button").attr("data-roomid", room.roomID);
+				roomElement.find(".leave-room-button").attr("data-roomid", room.roomID);
+				roomElement.find(".ready-button").attr("data-roomid", room.roomID);
+
+				// Set player names and their ready statues
+				const players = Object.values(room.players);
+
+				if (players.at(0) != undefined) {
+					roomElement.find(".player1-name").text(players.at(0).name);
+					if (players.at(0).ready) roomElement.find(".player1-name").addClass("ready");
+				}
+				if (players.at(1) != undefined) {
+					roomElement.find(".player2-name").text(players.at(1).name);
+					if (players.at(1).ready) roomElement.find(".player2-name").addClass("ready");
+				}
+
+				$("#room-listing").append(roomElement);
+			}
+
+			// Re-attach event handlers to the new buttons
+			setRoomButtons();
+		});
 
 		socket.on("room_page_success", (msg) => {
 			$("#room-message").text(msg);
@@ -87,41 +113,6 @@ const HandGame = (function() {
 		socket.on("room_page_error", (msg) => {
 			$("#room-message").text(msg);
 		});
-
-
-		socket.on("update_rooms", (rooms) => {
-			// Empty out listing
-			$("#room-listing").empty();
-
-			// Loop through all rooms, clone template node, add back room info, and append to listing
-			for (const room of Object.values(rooms)) {
-				const roomElement = $($("#room-template").html());
-				console.log(roomElement);
-
-				roomElement.attr("data-roomid", room.roomID);
-				roomElement.find(".join-room-button").attr("data-roomid", room.roomID);
-				roomElement.find(".ready-button").attr("data-roomid", room.roomID);
-
-				const players = Object.values(room.players);
-				const playerNames = Object.values(room.players).map((player) => player.name);
-				console.log(playerNames);
-
-				if (playerNames.at(0) != undefined) {
-					roomElement.find(".player1-name").text(playerNames.at(0));
-					if (players.at(0).ready) roomElement.find(".player1-name").addClass("ready");
-				}
-				if (playerNames.at(1) != undefined) {
-					roomElement.find(".player2-name").text(playerNames.at(1));
-					if (players.at(1).ready) roomElement.find(".player2-name").addClass("ready");
-				}
-
-				$("#room-listing").append(roomElement);
-			}
-
-			setRoomButtons();
-		});
-
-		setRoomButtons();
 	};
 
 	// const updatePlayers = function(players) {

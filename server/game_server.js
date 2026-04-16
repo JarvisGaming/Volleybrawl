@@ -34,9 +34,7 @@ let players = {};
 
 // Handle the web socket connection
 io.on("connection", (socket) => {
-	console.log("Player connected:", socket.id);
-
-	// Wait for a player to join the game
+	// Join game and enter game listing page
 	socket.on("join", (playerName) => {
 		players[socket.id] = { name: playerName, joinedRoomID: null, inGame: false };
 		socket.emit("join_success");
@@ -66,6 +64,23 @@ io.on("connection", (socket) => {
 		players[socket.id].joinedRoomID = newRoom.roomID;
 
 		socket.emit("room_page_success", "Successfully joined the room.");
+		io.emit("update_rooms", rooms);
+
+		console.dir({rooms, players}, { depth: null });
+	});
+
+	socket.on("leave_room", (roomID) => {
+		let room = rooms[roomID];
+
+		if (players[socket.id].joinedRoomID != roomID) {
+			socket.emit("room_page_error", "You can't leave a room you haven't joined.");
+			return;
+		}
+
+		socket.leave(room.roomID);
+		delete room.players[socket.id];
+		players[socket.id].joinedRoomID = null;
+		socket.emit("room_page_success", "You have left the room.");
 		io.emit("update_rooms", rooms);
 
 		console.dir({rooms, players}, { depth: null });
