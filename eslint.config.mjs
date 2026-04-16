@@ -9,7 +9,8 @@ const customGlobals = {
 	jquery: 'readonly',
 	jQuery: 'readonly',
 	io: 'readonly',
-	require: 'readonly'
+	require: 'readonly',
+	module: 'readonly',
 };
 
 export default defineConfig([
