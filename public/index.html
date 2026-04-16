@@ -40,7 +40,33 @@
 
         <!-- The main page -->
         <div id="hand-game-main-page" style="display: none">
-            <div class="row">
+            <div class="title">Room Listing</div>
+            <div id="room-listing">
+                <div class="room" data-roomid="room1">
+                    <div class="player1-name">player1</div>
+                    <b>VS</b>
+                    <div class="player2-name">player2</div>
+                    <button data-roomid="room1" class="join-room-button">Join Room</button>
+                    <button data-roomid="room1" class="ready-button">Ready</button>
+                </div>
+                <div class="room" data-roomid="room2">
+                    <div class="player1-name">player1</div>
+                    <b>VS</b>
+                    <div class="player2-name">player2</div>
+                    <button data-roomid="room2" class="join-room-button">Join Room</button>
+                    <button data-roomid="room2" class="ready-button">Ready</button>
+                </div>
+                <div class="room" data-roomid="room3">
+                    <div class="player1-name">player1</div>
+                    <b>VS</b>
+                    <div class="player2-name">player2</div>
+                    <button data-roomid="room3" class="join-room-button">Join Room</button>
+                    <button data-roomid="room3" class="ready-button">Ready</button>
+                </div>
+            </div>
+            <div id="room-message" class="message"></div>
+
+            <!-- <div class="row">
                 <div class="col">
                     <div class="title">Rock, Paper, Scissors</div>
                     <div class="row players">
@@ -79,7 +105,7 @@
                         <img src="images/scissors.png" alt="Scissors" class="sign">
                     </button>
                 </div>
-            </div>
+            </div> -->
         </div>
 
     </div>

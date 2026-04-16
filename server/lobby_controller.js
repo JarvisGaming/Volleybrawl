@@ -22,7 +22,7 @@ const playerJoin = (socket, io, gameState, name) => {
 	// Put the player in the players object
 	gameState.players[socket.id] = { name, ready: false };
 	socket.emit("join_success");
-	io.to("room1").emit("update_players", gameState.players);
+	io.to(gameState.roomID).emit("update_players", gameState.players);
 
 	console.log("Current players -", gameState.players); // DON'T DELETE - FOR MARKING
 };
@@ -38,7 +38,7 @@ const playerReady = (socket, io, gameState) => {
 	gameState.players[socket.id]["ready"] = true;
 
 	// Broadcast the players to the connected browsers
-	io.emit("update_players", gameState.players);
+	io.to(gameState.roomID).emit("update_players", gameState.players);
 
 	// Check if everybody is ready; if so, start the game automatically
 	if (Object.values(gameState.players).every((player) => player.ready)){
@@ -50,7 +50,7 @@ const playerReady = (socket, io, gameState) => {
 
 const finishGame = function(io, gameState) {
 	// Tell the browsers the game has finished
-	io.emit("game_end", gameState.players);
+	io.to(gameState.roomID).emit("game_end", gameState.players);
 
 	// Reset the game
 	gameState.players = {};
@@ -63,8 +63,6 @@ const chooseSign = (socket, io, gameState, sign) => {
 	gameState.players[socket.id]["sign"] = sign;
 
 	// Check if everybody has selected a hand sign, if so, the game will finish
-
-	// Add your code here
 	if (Object.values(gameState.players).every((player) => player.sign != undefined)){
 		finishGame(io, gameState);
 	}
@@ -78,7 +76,7 @@ const playerDisconnect = (socket, io, gameState) => {
 		delete gameState.players[socket.id];
 
 		// Broadcast the players to the connected browsers
-		io.emit("update_players", gameState.players);
+		io.to(gameState.roomID).emit("update_players", gameState.players);
 	}
 };
 
