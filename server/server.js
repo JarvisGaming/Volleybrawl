@@ -16,6 +16,11 @@ const { Server } = require("socket.io");
 const httpServer = createServer(app);
 const io = new Server(httpServer);
 
+/**
+ * Represents all connected clients.
+ * @typedef {import("./room_controller.js").Player} Player
+ * @type {Object.<string, Player>}
+ */
 let players = {};
 
 // Handle the web socket connection

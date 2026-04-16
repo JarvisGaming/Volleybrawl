@@ -1,9 +1,44 @@
 const crypto = require("crypto");
+
+/**
+ * @typedef {Object} Room
+ * @property {string} roomID
+ * @property {Object.<string, Player>} players
+ */
+
+/**
+ * Represents all rooms with at least 1 player inside.
+ * Keys are roomIDs (UUID strings).
+ * @type {Object.<string, Room>}
+ */
 let rooms = {};
+
+/**
+ * Represents a connected client.
+ * @typedef {Object} Player
+ * @property {string} name
+ * @property {string|null} joinedRoomID - The roomID of the room the player has joined, or null if not in any room.
+ * @property {boolean} ready - Whether the player is ready in the room they have joined. Meaningless if not in any room.
+ * @property {boolean} inGame - Whether the player is currently in a game.
+ */
+
+/**
+ * Factory function to create a Player object.
+ * @param {string} name 
+ * @returns {Player}
+ */
+const createPlayer = function(name) {
+	return {
+		name,
+		joinedRoomID: null,
+		ready: false,
+		inGame: false
+	};
+};
 
 // Join game and enter game listing page
 const enterGameListPage = function(socket, players, playerName) {
-	players[socket.id] = { name: playerName, joinedRoomID: null, inGame: false };
+	players[socket.id] = createPlayer(playerName);
 	socket.emit("join_success");
 	socket.emit("update_rooms", rooms);
 
@@ -12,9 +47,11 @@ const enterGameListPage = function(socket, players, playerName) {
 
 // Make current player leave an already joined room (if any)
 function leaveOldRoom(socket, players){
-	let oldRoomID = players[socket.id].joinedRoomID;
+	const player = players[socket.id];
+
+	let oldRoomID = player.joinedRoomID;
 	let oldRoom = rooms[oldRoomID];
-	players[socket.id].joinedRoomID = null;
+	player.joinedRoomID = null;
 
 	if (oldRoom != null){
 		delete oldRoom.players[socket.id];
@@ -28,9 +65,13 @@ function leaveOldRoom(socket, players){
 
 // Make current player join a new room
 function joinNewRoom(socket, players, roomID){
+	const player = players[socket.id];
+
 	let newRoom = rooms[roomID];
-	newRoom.players[socket.id] = { name: players[socket.id].name, ready: false };
-	players[socket.id].joinedRoomID = newRoom.roomID;
+	newRoom.players[socket.id] = player;
+
+	player.joinedRoomID = newRoom.roomID;
+	player.ready = false;
 }
 
 const createRoom = function(socket, io, players) {
@@ -47,7 +88,8 @@ const createRoom = function(socket, io, players) {
 };
 
 const joinRoom = function(socket, io, players, roomID) {
-	if (players[socket.id].joinedRoomID === roomID) {
+	const player = players[socket.id];
+	if (player.joinedRoomID === roomID) {
 		socket.emit("room_page_error", "You are already in this room.");
 		return;
 	}
@@ -67,7 +109,8 @@ const joinRoom = function(socket, io, players, roomID) {
 };
 
 const leaveRoom = function(socket, io, players, roomID) {
-	if (players[socket.id].joinedRoomID != roomID) {
+	const player = players[socket.id];
+	if (player.joinedRoomID != roomID) {
 		socket.emit("room_page_error", "You can't leave a room you haven't joined.");
 		return;
 	}
@@ -81,7 +124,8 @@ const leaveRoom = function(socket, io, players, roomID) {
 };
 
 const readyUp = function(socket, io, players, roomID) {
-	if (players[socket.id].joinedRoomID != roomID) {
+	const player = players[socket.id];
+	if (player.joinedRoomID != roomID) {
 		socket.emit("room_page_error", "You can't ready up in a room you haven't joined.");
 		return;
 	}
@@ -97,7 +141,8 @@ const readyUp = function(socket, io, players, roomID) {
 const disconnectInRoom = function(socket, io, players) {
 	if (!(socket.id in players)) return;
 
-	if (!players[socket.id].inGame) {
+	const player = players[socket.id];
+	if (!player.inGame) {
 		leaveOldRoom(socket, players);
 		delete players[socket.id];
 		io.emit("update_rooms", rooms);
