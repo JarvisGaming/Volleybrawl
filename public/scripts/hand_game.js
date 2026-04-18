@@ -64,6 +64,10 @@ const HandGame = (function() {
 			socket.emit("create_room");
 		});
 		
+		/**
+		 * Attach event handlers to the buttons of each room.
+		 * This is called every time the room listing is updated, since rooms are dynamically generated.
+		 */
 		function setRoomButtons(){
 			$(".join-room-button").on("click", function(e) {
 				socket.emit("join_room", $(e.currentTarget).attr("data-roomid"));
@@ -112,10 +116,12 @@ const HandGame = (function() {
 			setRoomButtons();
 		});
 
+		// Displays messages for successful operations in the room listing page.
 		socket.on("room_page_success", (msg) => {
 			$("#room-message").text(msg);
 		});
 
+		// Displays messages for failed operations in the room listing page.
 		socket.on("room_page_error", (msg) => {
 			$("#room-message").text(msg);
 		});

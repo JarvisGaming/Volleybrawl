@@ -8,25 +8,6 @@ button {
     padding: 20px;
 }
 
-form {
-    align-items: stretch !important;
-}
-
-form input, form select {
-    font-size: 1rem;
-    padding: 10px 15px;
-}
-
-form button {
-    font-size: 1rem;
-    font-weight: normal;
-    padding: 10px 15px;
-}
-
-/*
- * Other settings
- */
-
 .row, .col {
     display: flex;
     align-items: center;
@@ -56,9 +37,7 @@ form button {
     padding: 10px 0;
 }
 
-/*
- * Hand game rules (left over from lab6)
- */
+/* Page layout */
 
 body {
     width: 100vw;
@@ -77,10 +56,28 @@ body {
     flex-direction: column;
 }
 
+/* Join page */
+
+form {
+    align-items: stretch !important;
+}
+
+form input, form select {
+    font-size: 1rem;
+    padding: 10px 15px;
+}
+
+form button {
+    font-size: 1rem;
+    font-weight: normal;
+    padding: 10px 15px;
+}
+
 #join-form {
     width: 50%;
     min-width: 400px;
 }
+
 
 /* Room listing */
 

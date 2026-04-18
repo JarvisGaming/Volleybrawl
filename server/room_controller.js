@@ -1,3 +1,7 @@
+/**
+ * Controller for handling room listing page events and logic.
+ */
+
 const crypto = require("crypto");
 
 /**
@@ -36,16 +40,11 @@ const createPlayer = function(name) {
 	};
 };
 
-// Join game and enter game listing page
-const enterGameListPage = function(socket, players, playerName) {
-	players[socket.id] = createPlayer(playerName);
-	socket.emit("join_success");
-	socket.emit("update_rooms", rooms);
-
-	console.dir({rooms, players}, { depth: null });
-};
-
-// Make current player leave an already joined room (if any)
+/**
+ * Makes the current player leave an already joined room (if any).
+ * @param {import("socket.io").Socket} socket 
+ * @param {Object.<string, Player>} players 
+ */
 function leaveOldRoom(socket, players){
 	const player = players[socket.id];
 
@@ -63,7 +62,12 @@ function leaveOldRoom(socket, players){
 	}
 }
 
-// Make current player join a new room
+/**
+ * Makes the current player join a new room.
+ * @param {import("socket.io").Socket} socket 
+ * @param {Object.<string, Player>} players 
+ * @param {string} roomID 
+ */
 function joinNewRoom(socket, players, roomID){
 	const player = players[socket.id];
 
@@ -74,6 +78,26 @@ function joinNewRoom(socket, players, roomID){
 	player.ready = false;
 }
 
+/**
+ * Event handler for entering the game listing page.
+ * @param {import("socket.io").Socket} socket 
+ * @param {Object.<string, Player>} players 
+ * @param {string} playerName 
+ */
+const enterRoomListingPage = function(socket, players, playerName) {
+	players[socket.id] = createPlayer(playerName);
+	socket.emit("join_success");
+	socket.emit("update_rooms", rooms);
+
+	console.dir({rooms, players}, { depth: null });
+};
+
+/**
+ * Event handler for creating a new room and adding the current player to it.
+ * @param {import("socket.io").Socket} socket 
+ * @param {import("socket.io").Server} io 
+ * @param {Object.<string, Player>} players 
+ */
 const createRoom = function(socket, io, players) {
 	let roomID = crypto.randomUUID();
 	rooms[roomID] = { roomID: roomID, players: {} };
@@ -87,6 +111,14 @@ const createRoom = function(socket, io, players) {
 	console.dir({rooms, players}, { depth: null });
 };
 
+/**
+ * Event handler for adding a player to a specific room.
+ * @param {import("socket.io").Socket} socket 
+ * @param {import("socket.io").Server} io 
+ * @param {Object.<string, Player>} players 
+ * @param {string} roomID 
+ * @returns 
+ */
 const joinRoom = function(socket, io, players, roomID) {
 	const player = players[socket.id];
 	if (player.joinedRoomID === roomID) {
@@ -108,6 +140,14 @@ const joinRoom = function(socket, io, players, roomID) {
 	console.dir({rooms, players}, { depth: null });
 };
 
+/**
+ * Event handler for removing a player from a specific room.
+ * @param {import("socket.io").Socket} socket 
+ * @param {import("socket.io").Server} io 
+ * @param {Object.<string, Player>} players 
+ * @param {string} roomID 
+ * @returns 
+ */
 const leaveRoom = function(socket, io, players, roomID) {
 	const player = players[socket.id];
 	if (player.joinedRoomID != roomID) {
@@ -123,6 +163,14 @@ const leaveRoom = function(socket, io, players, roomID) {
 	console.dir({rooms, players}, { depth: null });
 };
 
+/**
+ * Event handler for toggling the ready status of a player in a specific room.
+ * @param {import("socket.io").Socket} socket 
+ * @param {import("socket.io").Server} io 
+ * @param {Object.<string, Player>} players 
+ * @param {string} roomID 
+ * @returns 
+ */
 const readyUp = function(socket, io, players, roomID) {
 	const player = players[socket.id];
 	if (player.joinedRoomID != roomID) {
@@ -138,6 +186,12 @@ const readyUp = function(socket, io, players, roomID) {
 	console.dir({rooms, players}, { depth: null });
 };
 
+/**
+ * Event handler for handling the disconnection of a player who is currently in a room.
+ * @param {import("socket.io").Socket} socket 
+ * @param {import("socket.io").Server} io 
+ * @param {Object.<string, Player>} players 
+ */
 const disconnectInRoom = function(socket, io, players) {
 	if (!(socket.id in players)) return;
 
@@ -151,4 +205,4 @@ const disconnectInRoom = function(socket, io, players) {
 	console.dir({rooms, players}, { depth: null });
 };
 
-module.exports = { enterGameListPage, createRoom, joinRoom, leaveRoom, readyUp, disconnectInRoom };
+module.exports = { enterRoomListingPage, createRoom, joinRoom, leaveRoom, readyUp, disconnectInRoom };

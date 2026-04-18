@@ -17,8 +17,11 @@ const httpServer = createServer(app);
 const io = new Server(httpServer);
 
 /**
- * Represents all connected clients.
  * @typedef {import("./room_controller.js").Player} Player
+ */
+
+/**
+ * Represents all connected clients.
  * @type {Object.<string, Player>}
  */
 let players = {};
@@ -26,7 +29,7 @@ let players = {};
 // Handle the web socket connection
 io.on("connection", (socket) => {
 	// Room controller
-	socket.on("join", (playerName) => roomController.enterGameListPage(socket, players, playerName));
+	socket.on("join", (playerName) => roomController.enterRoomListingPage(socket, players, playerName));
 	socket.on("create_room", () => roomController.createRoom(socket, io, players));
 	socket.on("join_room", (roomID) => roomController.joinRoom(socket, io, players, roomID));
 	socket.on("leave_room", (roomID) => roomController.leaveRoom(socket, io, players, roomID));
