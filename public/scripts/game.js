@@ -52,11 +52,11 @@ const HandGame = (function() {
 			$("#room-listing-page").show();
 
 			// Initialize main page related events
-			initRoomPage();
+			initRoomListingPage();
 		});
 	};
 
-	const initRoomPage = function() {
+	const initRoomListingPage = function() {
 		// Not included in setRoomButtons() since it is not dynamically generated, so we don't need to re-attach event handlers to it
 		$("#create-room-button").on("click", function() {
 			socket.emit("create_room");
