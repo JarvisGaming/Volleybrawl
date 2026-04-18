@@ -33,7 +33,7 @@ const rooms = {};
 const players = {};
 
 /**
- * Factory function to create a Player object.
+ * Factory function to create a RoomPlayer object.
  * @param {string} name 
  * @returns {RoomPlayer}
  */
@@ -97,7 +97,7 @@ function startGame(room) {
 	gameController.createGame(room);
 
 	// Make clients load game page
-	shared.getIO().to(room.roomID).emit("game_start");
+	shared.getIO().to(room.roomID).emit("load_game");
 
 	// Delete the room
 	delete rooms[room.roomID];
@@ -238,4 +238,4 @@ const eventHandlers = {
 	},
 };
 
-module.exports = eventHandlers;
+module.exports = { eventHandlers };

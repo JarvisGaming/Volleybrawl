@@ -3,8 +3,9 @@
  */
 
 const shared = require("./shared.js");
-const roomController = require("./room_controller.js");
-const gameController = require("./game_controller.js");
+
+const roomController = require("./room_controller.js").eventHandlers;
+const gameController = require("./game_controller.js").eventHandlers;
 
 // Create the Express app
 const express = require("express");
@@ -30,6 +31,9 @@ io.on("connection", (socket) => {
 	socket.on("join_room", (roomID) => roomController.joinRoom(socket, roomID));
 	socket.on("leave_room", (roomID) => roomController.leaveRoom(socket, roomID));
 	socket.on("ready", (roomID) => roomController.readyUp(socket, roomID));
+
+	// Game controller
+	socket.on("game_loaded", () => gameController.gameLoaded(socket));
 
 	// Handle disconnect across controllers (each one will check whether the player is in their player list and do the necessary clean up if so)
 	socket.on("disconnect", () => roomController.disconnectInRoom(socket));

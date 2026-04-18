@@ -125,10 +125,79 @@ const game = (function() {
 			$("#room-message").text(msg);
 		});
 
-		socket.on("game_start", () => {
+		socket.on("load_game", () => {
 			// Show the game page
 			$("#room-listing-page").hide();
 			$("#game-page").show();
+			initGamePage();
+			socket.emit("game_loaded");
+		});
+	};
+
+	const initGamePage = function() {
+		// Displays messages for failed operations in the game page.
+		socket.on("game_page_error", (msg) => {
+			$("#game-message").text(msg);
+		});
+
+		socket.on("start_game", () => {
+			// For now we just display a message, but you can replace this with actual game logic
+			$("#game-message").text("The game has started!");
+		});
+
+		socket.on("draw_game_frame", (positions) => {
+			/**
+			 * @type {CanvasRenderingContext2D}
+			 */
+			const context = $("#game-canvas").get(0).getContext("2d");
+			
+			class Sprite {
+				constructor(x, y){
+					this.x = x;
+					this.y = y;
+				}
+			}
+
+			class Circle extends Sprite {
+				constructor(x, y, radius, color){
+					super(x, y);
+					this.radius = radius;
+					this.color = color;
+				}
+				draw(){
+					context.beginPath();
+					context.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+					context.fillStyle = this.color;
+					context.fill();
+				}
+			}
+
+			class Net extends Sprite {
+				constructor(x, y){
+					super(x, y);
+				}
+				draw(){
+					context.beginPath();
+					context.rect(this.x, this.y, 20, 300);
+					context.fillStyle = "black";
+					context.fill();
+				}
+			}
+
+			// Players
+			const player1 = new Circle(positions.player1.x, positions.player1.y, 50, "red");
+			player1.draw();
+
+			const player2 = new Circle(positions.player2.x, positions.player2.y, 50, "blue");
+			player2.draw();
+
+			// Ball
+			const ball = new Circle(positions.ball.x, positions.ball.y, 25, "green");
+			ball.draw();
+
+			// Net
+			const net = new Net(positions.net.x, positions.net.y);
+			net.draw();
 		});
 	};
 
