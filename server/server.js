@@ -1,7 +1,9 @@
-// Run with node server/server.js at root directory
+/**
+ * Run with node server/server.js at root directory
+ */
 
+const shared = require("./shared.js");
 const roomController = require("./room_controller.js");
-
 
 // Create the Express app
 const express = require("express");
@@ -16,25 +18,18 @@ const { Server } = require("socket.io");
 const httpServer = createServer(app);
 const io = new Server(httpServer);
 
-/**
- * @typedef {import("./room_controller.js").Player} Player
- */
-
-/**
- * Represents all connected clients.
- * @type {Object.<string, Player>}
- */
-let players = {};
+// Initialize the shared io instance, so we don't have to pass it explictly into controller functions
+shared.initialize(io);
 
 // Handle the web socket connection
 io.on("connection", (socket) => {
 	// Room controller
-	socket.on("join", (playerName) => roomController.enterRoomListingPage(socket, players, playerName));
-	socket.on("create_room", () => roomController.createRoom(socket, io, players));
-	socket.on("join_room", (roomID) => roomController.joinRoom(socket, io, players, roomID));
-	socket.on("leave_room", (roomID) => roomController.leaveRoom(socket, io, players, roomID));
-	socket.on("ready", (roomID) => roomController.readyUp(socket, io, players, roomID));
-	socket.on("disconnect", () => roomController.disconnectInRoom(socket, io, players));
+	socket.on("join", (playerName) => roomController.enterRoomListingPage(socket, playerName));
+	socket.on("create_room", () => roomController.createRoom(socket));
+	socket.on("join_room", (roomID) => roomController.joinRoom(socket, roomID));
+	socket.on("leave_room", (roomID) => roomController.leaveRoom(socket, roomID));
+	socket.on("ready", (roomID) => roomController.readyUp(socket, roomID));
+	socket.on("disconnect", () => roomController.disconnectInRoom(socket));
 });
 
 // Use a web server to listen at port 8000

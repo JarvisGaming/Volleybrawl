@@ -1,10 +1,21 @@
 /**
  * Controller for handling room listing page events and logic.
  */
-
+const shared = require("./shared.js");
 const crypto = require("crypto");
 
+
 /**
+ * Represents a connected client.
+ * @typedef {Object} Player
+ * @property {string} name
+ * @property {string|null} joinedRoomID - The roomID of the room the player has joined, or null if not in any room.
+ * @property {boolean} ready - Whether the player is ready in the room they have joined. Meaningless if not in any room.
+ * @property {boolean} inGame - Whether the player is currently in a game.
+ */
+
+/**
+ * Represents an active room with at least 1 player inside.
  * @typedef {Object} Room
  * @property {string} roomID
  * @property {Object.<string, Player>} players
@@ -18,13 +29,10 @@ const crypto = require("crypto");
 let rooms = {};
 
 /**
- * Represents a connected client.
- * @typedef {Object} Player
- * @property {string} name
- * @property {string|null} joinedRoomID - The roomID of the room the player has joined, or null if not in any room.
- * @property {boolean} ready - Whether the player is ready in the room they have joined. Meaningless if not in any room.
- * @property {boolean} inGame - Whether the player is currently in a game.
+ * Represents all connected clients in the room listing screen.
+ * @type {Object.<string, Player>}
  */
+let players = {};
 
 /**
  * Factory function to create a Player object.
@@ -43,9 +51,8 @@ const createPlayer = function(name) {
 /**
  * Makes the current player leave an already joined room (if any).
  * @param {import("socket.io").Socket} socket 
- * @param {Object.<string, Player>} players 
  */
-function leaveOldRoom(socket, players){
+function leaveOldRoom(socket){
 	const player = players[socket.id];
 
 	let oldRoomID = player.joinedRoomID;
@@ -65,10 +72,9 @@ function leaveOldRoom(socket, players){
 /**
  * Makes the current player join a new room.
  * @param {import("socket.io").Socket} socket 
- * @param {Object.<string, Player>} players 
  * @param {string} roomID 
  */
-function joinNewRoom(socket, players, roomID){
+function joinNewRoom(socket, roomID){
 	const player = players[socket.id];
 
 	let newRoom = rooms[roomID];
@@ -81,10 +87,9 @@ function joinNewRoom(socket, players, roomID){
 /**
  * Event handler for entering the game listing page.
  * @param {import("socket.io").Socket} socket 
- * @param {Object.<string, Player>} players 
  * @param {string} playerName 
  */
-const enterRoomListingPage = function(socket, players, playerName) {
+const enterRoomListingPage = function(socket, playerName) {
 	players[socket.id] = createPlayer(playerName);
 	socket.emit("join_success");
 	socket.emit("update_rooms", rooms);
@@ -95,18 +100,16 @@ const enterRoomListingPage = function(socket, players, playerName) {
 /**
  * Event handler for creating a new room and adding the current player to it.
  * @param {import("socket.io").Socket} socket 
- * @param {import("socket.io").Server} io 
- * @param {Object.<string, Player>} players 
  */
-const createRoom = function(socket, io, players) {
+const createRoom = function(socket) {
 	let roomID = crypto.randomUUID();
 	rooms[roomID] = { roomID: roomID, players: {} };
 
-	leaveOldRoom(socket, players);
-	joinNewRoom(socket, players, roomID);
+	leaveOldRoom(socket);
+	joinNewRoom(socket, roomID);
 
 	socket.emit("room_page_success", "Successfully created a new room.");
-	io.emit("update_rooms", rooms);
+	shared.getIO().emit("update_rooms", rooms);
 
 	console.dir({rooms, players}, { depth: null });
 };
@@ -114,12 +117,10 @@ const createRoom = function(socket, io, players) {
 /**
  * Event handler for adding a player to a specific room.
  * @param {import("socket.io").Socket} socket 
- * @param {import("socket.io").Server} io 
- * @param {Object.<string, Player>} players 
  * @param {string} roomID 
  * @returns 
  */
-const joinRoom = function(socket, io, players, roomID) {
+const joinRoom = function(socket, roomID) {
 	const player = players[socket.id];
 	if (player.joinedRoomID === roomID) {
 		socket.emit("room_page_error", "You are already in this room.");
@@ -131,11 +132,11 @@ const joinRoom = function(socket, io, players, roomID) {
 		return;
 	}
 	
-	leaveOldRoom(socket, players);
-	joinNewRoom(socket, players, roomID);
+	leaveOldRoom(socket);
+	joinNewRoom(socket, roomID);
 
 	socket.emit("room_page_success", "Successfully joined the room.");
-	io.emit("update_rooms", rooms);
+	shared.getIO().emit("update_rooms", rooms);
 
 	console.dir({rooms, players}, { depth: null });
 };
@@ -143,22 +144,20 @@ const joinRoom = function(socket, io, players, roomID) {
 /**
  * Event handler for removing a player from a specific room.
  * @param {import("socket.io").Socket} socket 
- * @param {import("socket.io").Server} io 
- * @param {Object.<string, Player>} players 
  * @param {string} roomID 
  * @returns 
  */
-const leaveRoom = function(socket, io, players, roomID) {
+const leaveRoom = function(socket, roomID) {
 	const player = players[socket.id];
 	if (player.joinedRoomID != roomID) {
 		socket.emit("room_page_error", "You can't leave a room you haven't joined.");
 		return;
 	}
 
-	leaveOldRoom(socket, players);
+	leaveOldRoom(socket);
 
 	socket.emit("room_page_success", "Successfully left the room.");
-	io.emit("update_rooms", rooms);
+	shared.getIO().emit("update_rooms", rooms);
 
 	console.dir({rooms, players}, { depth: null });
 };
@@ -166,12 +165,10 @@ const leaveRoom = function(socket, io, players, roomID) {
 /**
  * Event handler for toggling the ready status of a player in a specific room.
  * @param {import("socket.io").Socket} socket 
- * @param {import("socket.io").Server} io 
- * @param {Object.<string, Player>} players 
  * @param {string} roomID 
  * @returns 
  */
-const readyUp = function(socket, io, players, roomID) {
+const readyUp = function(socket, roomID) {
 	const player = players[socket.id];
 	if (player.joinedRoomID != roomID) {
 		socket.emit("room_page_error", "You can't ready up in a room you haven't joined.");
@@ -180,7 +177,7 @@ const readyUp = function(socket, io, players, roomID) {
 
 	let newRoom = rooms[roomID];
 	newRoom.players[socket.id].ready = !newRoom.players[socket.id].ready;
-	io.emit("update_rooms", rooms);
+	shared.getIO().emit("update_rooms", rooms);
 	socket.emit("room_page_success", "You are " + (newRoom.players[socket.id].ready ? "ready" : "not ready") + ".");
 
 	console.dir({rooms, players}, { depth: null });
@@ -189,17 +186,15 @@ const readyUp = function(socket, io, players, roomID) {
 /**
  * Event handler for handling the disconnection of a player who is currently in a room.
  * @param {import("socket.io").Socket} socket 
- * @param {import("socket.io").Server} io 
- * @param {Object.<string, Player>} players 
  */
-const disconnectInRoom = function(socket, io, players) {
+const disconnectInRoom = function(socket) {
 	if (!(socket.id in players)) return;
 
 	const player = players[socket.id];
 	if (!player.inGame) {
-		leaveOldRoom(socket, players);
+		leaveOldRoom(socket);
 		delete players[socket.id];
-		io.emit("update_rooms", rooms);
+		shared.getIO().emit("update_rooms", rooms);
 	}
 
 	console.dir({rooms, players}, { depth: null });
