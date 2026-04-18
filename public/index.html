@@ -2,8 +2,13 @@
 <html>
 <head>
     <title>Volleybrawl</title>
+    
     <link href="reset.css" rel="stylesheet">
     <link href="style.css" rel="stylesheet">
+
+    <script src="scripts/jquery.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="scripts/game.js" defer></script>
 </head>
 <body>
     <!-- The connect page -->
@@ -11,6 +16,8 @@
         <div class="row">
             <div class="col">
                 <div class="title">Connecting...</div>
+
+                <!-- I don't think this does anything -->
                 <div id="connect-message" class="message"></div>
             </div>
         </div>
@@ -42,6 +49,7 @@
         <!-- Rooms are dynamically added in here -->
         <div id="room-listing"></div>
 
+        <!-- What each room looks like, which is copied and have its information filled in to create a new room element -->
         <template id="room-template">
             <div class="room" data-roomid="">
                 <div class="player1-name"></div>
@@ -55,11 +63,5 @@
             </div>
         </template>
     </div>
-
-    <!-- JavaScript files for the hand game -->
-    <script src="https://code.jquery.com/jquery-4.0.0.min.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="scripts/game.js" defer></script>
-    
 </body>
 </html>

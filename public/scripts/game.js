@@ -1,4 +1,4 @@
-const HandGame = (function() {
+const game = (function() {
 	const socket = io();
 
 	const initConnectPage = function() {
@@ -133,4 +133,4 @@ const HandGame = (function() {
 	return { init };
 })();
 
-HandGame.init();
+game.init();
