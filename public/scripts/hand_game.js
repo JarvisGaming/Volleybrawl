@@ -37,24 +37,22 @@ const HandGame = (function() {
 			}
 			
 			// Send the WebSocket message to the server
-			socket.emit("join", playerName);
+			socket.emit("enter_room_listing_page", playerName);
 		});
 
-		// Handle the error for the join request
-		socket.on("join_error", (error) => {
-			// Show the error
-			$("#join-message").text(error);
-		});
+		// Server currently doesn't throw "enter_room_listing_page_error"
+		// socket.on("enter_room_listing_page_error", (error) => {
+		// 	$("#join-message").text(error);
+		// });
 
 		// The player joins the game successfully
-		socket.on("join_success", () => {
+		socket.on("enter_room_listing_page_success", () => {
 			// Show the main page if successfully joined
 			$("#join-page").hide();
 			$("#room-listing-page").show();
 
 			// Initialize main page related events
 			initRoomPage();
-			// inGame = true;
 		});
 	};
 

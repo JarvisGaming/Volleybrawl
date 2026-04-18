@@ -24,7 +24,7 @@ shared.initialize(io);
 // Handle the web socket connection
 io.on("connection", (socket) => {
 	// Room controller
-	socket.on("join", (playerName) => roomController.enterRoomListingPage(socket, playerName));
+	socket.on("enter_room_listing_page", (playerName) => roomController.enterRoomListingPage(socket, playerName));
 	socket.on("create_room", () => roomController.createRoom(socket));
 	socket.on("join_room", (roomID) => roomController.joinRoom(socket, roomID));
 	socket.on("leave_room", (roomID) => roomController.leaveRoom(socket, roomID));

@@ -30,6 +30,7 @@ let rooms = {};
 
 /**
  * Represents all connected clients in the room listing screen.
+ * Keys are (currently) socketIDs.
  * @type {Object.<string, Player>}
  */
 let players = {};
@@ -59,6 +60,7 @@ function leaveOldRoom(socket){
 	let oldRoom = rooms[oldRoomID];
 	player.joinedRoomID = null;
 
+	// Check if player is currently in a room
 	if (oldRoom != null){
 		delete oldRoom.players[socket.id];
 
@@ -91,7 +93,7 @@ function joinNewRoom(socket, roomID){
  */
 const enterRoomListingPage = function(socket, playerName) {
 	players[socket.id] = createPlayer(playerName);
-	socket.emit("join_success");
+	socket.emit("enter_room_listing_page_success");
 	socket.emit("update_rooms", rooms);
 
 	console.dir({rooms, players}, { depth: null });
