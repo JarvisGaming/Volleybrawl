@@ -80,6 +80,7 @@ const game = (function() {
 			});
 		}
 
+		// Update the room listing with the latest information from the server
 		socket.on("update_rooms", (rooms) => {
 			// Empty out listing
 			$("#room-listing").empty();
@@ -122,6 +123,12 @@ const game = (function() {
 		// Displays messages for failed operations in the room listing page.
 		socket.on("room_page_error", (msg) => {
 			$("#room-message").text(msg);
+		});
+
+		socket.on("game_start", () => {
+			// Show the game page
+			$("#room-listing-page").hide();
+			$("#game-page").show();
 		});
 	};
 

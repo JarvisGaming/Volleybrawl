@@ -1,9 +1,7 @@
-/**
- * Controller for handling room listing page events and logic.
- */
 const shared = require("./shared.js");
 const crypto = require("crypto");
-
+const gameController = require("./game_controller.js");
+const MAX_PLAYERS_PER_ROOM = 2;
 
 /**
  * Represents a connected client.
@@ -11,7 +9,6 @@ const crypto = require("crypto");
  * @property {string} name
  * @property {string|null} joinedRoomID - The roomID of the room the player has joined, or null if not in any room.
  * @property {boolean} ready - Whether the player is ready in the room they have joined. Meaningless if not in any room.
- * @property {boolean} inGame - Whether the player is currently in a game.
  */
 
 /**
@@ -26,14 +23,14 @@ const crypto = require("crypto");
  * Keys are roomIDs (UUID strings).
  * @type {Object.<string, Room>}
  */
-let rooms = {};
+const rooms = {};
 
 /**
  * Represents all connected clients in the room listing screen.
  * Keys are (currently) socketIDs.
  * @type {Object.<string, Player>}
  */
-let players = {};
+const players = {};
 
 /**
  * Factory function to create a Player object.
@@ -45,7 +42,6 @@ const createPlayer = function(name) {
 		name,
 		joinedRoomID: null,
 		ready: false,
-		inGame: false
 	};
 };
 
@@ -56,8 +52,8 @@ const createPlayer = function(name) {
 function leaveOldRoom(socket){
 	const player = players[socket.id];
 
-	let oldRoomID = player.joinedRoomID;
-	let oldRoom = rooms[oldRoomID];
+	const oldRoomID = player.joinedRoomID;
+	const oldRoom = rooms[oldRoomID];
 	player.joinedRoomID = null;
 
 	// Check if player is currently in a room
@@ -79,11 +75,38 @@ function leaveOldRoom(socket){
 function joinNewRoom(socket, roomID){
 	const player = players[socket.id];
 
-	let newRoom = rooms[roomID];
+	const newRoom = rooms[roomID];
 	newRoom.players[socket.id] = player;
 
 	player.joinedRoomID = newRoom.roomID;
 	player.ready = false;
+}
+
+/**
+ * Start a new game with the players in the room, then delete the room.
+ * @param {Room} room 
+ */
+function startGame(room) {
+	// Add all players to socket room
+	for (const socketID of Object.keys(room.players)) {
+		const playerSocket = shared.getIO().sockets.sockets.get(socketID);
+		playerSocket.join(room.roomID);
+	}
+
+	// Start the game without countdown
+	shared.getIO().to(room.roomID).emit("game_start");
+
+	// Pass room ID to game controller to use as game ID
+	gameController.createGame(room);
+
+	// Delete the room
+	delete rooms[room.roomID];
+	shared.getIO().emit("update_rooms", rooms);
+
+	// Remove players from player list in controller
+	for (const socketID of Object.keys(room.players)) {
+		delete players[socketID];
+	}
 }
 
 /**
@@ -104,7 +127,7 @@ const enterRoomListingPage = function(socket, playerName) {
  * @param {import("socket.io").Socket} socket 
  */
 const createRoom = function(socket) {
-	let roomID = crypto.randomUUID();
+	const roomID = crypto.randomUUID();
 	rooms[roomID] = { roomID: roomID, players: {} };
 
 	leaveOldRoom(socket);
@@ -129,7 +152,7 @@ const joinRoom = function(socket, roomID) {
 		return;
 	}
 
-	if (Object.keys(rooms[roomID].players).length >= 2) {
+	if (Object.keys(rooms[roomID].players).length >= MAX_PLAYERS_PER_ROOM) {
 		socket.emit("room_page_error", "The room is full already.");
 		return;
 	}
@@ -172,15 +195,26 @@ const leaveRoom = function(socket, roomID) {
  */
 const readyUp = function(socket, roomID) {
 	const player = players[socket.id];
+
 	if (player.joinedRoomID != roomID) {
 		socket.emit("room_page_error", "You can't ready up in a room you haven't joined.");
 		return;
 	}
 
-	let newRoom = rooms[roomID];
-	newRoom.players[socket.id].ready = !newRoom.players[socket.id].ready;
+	// Toggle ready status
+	const room = rooms[roomID];
+	room.players[socket.id].ready = !room.players[socket.id].ready;
+
 	shared.getIO().emit("update_rooms", rooms);
-	socket.emit("room_page_success", "You are " + (newRoom.players[socket.id].ready ? "ready" : "not ready") + ".");
+	socket.emit("room_page_success", "You are " + (room.players[socket.id].ready ? "ready" : "not ready") + ".");
+
+	// Start the game if all players are ready
+	if (
+		Object.keys(room.players).length == MAX_PLAYERS_PER_ROOM &&
+		Object.values(room.players).every(player => player.ready)
+	) {
+		startGame(room);
+	}
 
 	console.dir({rooms, players}, { depth: null });
 };
@@ -203,3 +237,5 @@ const disconnectInRoom = function(socket) {
 };
 
 module.exports = { enterRoomListingPage, createRoom, joinRoom, leaveRoom, readyUp, disconnectInRoom };
+
+

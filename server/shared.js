@@ -1,7 +1,11 @@
 /**
- * Shared variables and functions across server files.
+ * @file Shared variables and functions across server files.
  */
 
+/**
+ * Socket.IO server instance.
+ * @type {import("socket.io").Server}
+ */
 let io = null;
 
 /**
