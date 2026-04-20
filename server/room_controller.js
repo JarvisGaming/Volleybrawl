@@ -27,7 +27,7 @@ const rooms = {};
 
 /**
  * Represents all connected clients in the room listing screen.
- * Keys are (currently) socketIDs.
+ * Keys are socketIDs.
  * @type {Object.<string, RoomPlayer>}
  */
 const players = {};
@@ -37,7 +37,7 @@ const players = {};
  * @param {string} name 
  * @returns {RoomPlayer}
  */
-const createPlayer = function(name) {
+const createRoomPlayer = function(name) {
 	return {
 		name,
 		joinedRoomID: null,
@@ -116,7 +116,7 @@ const eventHandlers = {
 	 * @param {string} playerName 
 	 */
 	enterRoomListingPage(socket, playerName) {
-		players[socket.id] = createPlayer(playerName);
+		players[socket.id] = createRoomPlayer(playerName);
 		socket.emit("enter_room_listing_page_success");
 		socket.emit("update_rooms", rooms);
 

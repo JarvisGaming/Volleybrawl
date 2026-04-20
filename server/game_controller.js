@@ -4,7 +4,7 @@ const shared = require("./shared.js");
  * Represents a connected client.
  * @typedef {Object} GamePlayer
  * @property {string} name
- * @property {Number} playerID - Whether the player is player 1 or 2.
+ * @property {"player1"|"player2"} playerID - Whether the player is player 1 or 2.
  * @property {string} joinedGameID - The gameID of the game the player has joined.
  * @property {boolean} ready - Whether the player has loaded the game. Meaningless if not in any game.
  */
@@ -28,11 +28,16 @@ const shared = require("./shared.js");
 
 /**
  * @typedef {Object} GameState
- * @property {Object.<string, Position>} positions
- * Stores the positions of both players, the ball, and the net.
- * Access player positions via socketID. Access the ball and net with `ball`, `net`.
- * @property {Object.<string, PlayerStatistics>} statistics
- * Keys are socketIDs.
+ * @property {{
+ *   player1: Position,
+ *   player2: Position,
+ *   ball: Position,
+ *   net: Position
+ * }} positions
+ * @property {{
+ *   player1: PlayerStatistics,
+ *   player2: PlayerStatistics,
+ * }} statistics
  */
 
 /**
@@ -61,23 +66,35 @@ const players = {};
 /**
  * Factory function to create a GamePlayer object.
  * @param {string} name 
+ * @param {1|2} ithPlayer
+ * Whether the player is the 1st or the 2nd player.
+ * @param {string} gameID 
  * @returns {GamePlayer}
  */
-function createPlayer(name, playerID, gameID) {
+function createGamePlayer(name, ithPlayer, gameID) {
 	return {
 		name,
-		playerID,
+		playerID: `player${ithPlayer}`,
 		joinedGameID: gameID,
 		ready: false,
 	};
 }
 
 /**
- * 
  * @returns {GameState}
  */
 function initGameState(){
-	return {};
+	const positions = {
+		player1: {x: 100, y: 100, dx: 1, dy: 0},
+		player2: {x: 700, y: 100, dx: -1, dy: 0},
+		ball: {x: 400, y: 100, dx: 0, dy: 1},
+		net: {x: 390, y: 300, dx: 0, dy: 1},
+	};
+	const statistics = {
+		player1: {score: 0, numJumps: 0, numSmacks: 0},
+		player2: {score: 0, numJumps: 0, numSmacks: 0},
+	};
+	return {positions, statistics};
 }
 
 /**
@@ -91,24 +108,14 @@ function createGame(room) {
 
 	// Update player list in controller and game
 	for (const [socketID, player] of Object.entries(room.players)) {
-		players[socketID] = createPlayer(player.name, Object.keys(players).length + 1, gameID);
+		players[socketID] = createGamePlayer(player.name, Object.keys(players).length + 1, gameID);
 		games[gameID].players[socketID] = players[socketID];
 	}
 
 	console.dir({ games, players }, { depth: null });
 };
 
-function runGame(gameID){
-	const initialPositions = {
-		player1: {x: 100, y: 100, dx: 1, dy: 0},
-		player2: {x: 700, y: 100, dx: -1, dy: 0},
-		ball: {x: 400, y: 100, dx: 0, dy: 1},
-		net: {x: 390, y: 300, dx: 0, dy: 1},
-	};
-
-	const game = games[gameID];
-	game.state.positions = initialPositions;
-
+function runGame(game){
 	// Run game loop
 	setInterval(doTick, 1000 / shared.targetFPS, game);
 }
@@ -135,6 +142,7 @@ function sendPositionsToClients(gameID, positions){
 const eventHandlers = {
 	/**
 	 * Event handler for toggling the ready status of a player in a specific game.
+	 * If both players are ready, run the game.
 	 * @param {import("socket.io").Socket} socket 
 	 */
 	gameLoaded(socket) {
@@ -145,7 +153,7 @@ const eventHandlers = {
 		// If both players are ready, start the game
 		if (Object.values(game.players).every(player => player.ready)) {
 			shared.getIO().to(game.gameID).emit("start_game");
-			runGame(game.gameID);
+			runGame(game);
 		}
 
 		console.dir({ games, players }, { depth: null });
