@@ -27,7 +27,7 @@ const getIO = function() {
 const targetFPS = 60;
 const playerRadius = 50;
 const ballRadius = 25;
-const wallWidth = 15;
+const netWidth = 15;
 const gamefieldWidth = 800;
 const gamefieldHeight = 600;
 
@@ -42,4 +42,4 @@ function clamp(number, lowerBound, upperBound){
 	return Math.min(Math.max(number, lowerBound), upperBound);
 }
 
-module.exports = { initialize, getIO, targetFPS, clamp, playerRadius, ballRadius, wallWidth, gamefieldWidth, gamefieldHeight };
+module.exports = { initialize, getIO, targetFPS, clamp, playerRadius, ballRadius, netWidth, gamefieldWidth, gamefieldHeight };

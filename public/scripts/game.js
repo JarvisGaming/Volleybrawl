@@ -177,8 +177,7 @@ const game = (function() {
 			 */
 			const context = $("#game-canvas").get(0).getContext("2d");
 			context.clearRect(0, 0, context.canvas.width, context.canvas.width);
-			
-			const canvasWidth = 800;
+		
 			const canvasHeight = 600;
 
 			class Sprite {
