@@ -1,4 +1,4 @@
-const shared = require("./shared.js");
+const { getIO } = require("./shared.js");
 const crypto = require("crypto");
 const gameController = require("./game_controller.js");
 const MAX_PLAYERS_PER_ROOM = 2;
@@ -89,7 +89,7 @@ function joinNewRoom(socket, roomID){
 function startGame(room) {
 	// Add all players to socket room
 	for (const socketID of Object.keys(room.players)) {
-		const playerSocket = shared.getIO().sockets.sockets.get(socketID);
+		const playerSocket = getIO().sockets.sockets.get(socketID);
 		playerSocket.join(room.roomID);
 	}
 
@@ -97,11 +97,11 @@ function startGame(room) {
 	gameController.createGame(room);
 
 	// Make clients load game page
-	shared.getIO().to(room.roomID).emit("load_game");
+	getIO().to(room.roomID).emit("load_game");
 
 	// Delete the room
 	delete rooms[room.roomID];
-	shared.getIO().emit("update_rooms", rooms);
+	getIO().emit("update_rooms", rooms);
 
 	// Remove players from player list in controller
 	for (const socketID of Object.keys(room.players)) {
@@ -135,7 +135,7 @@ const eventHandlers = {
 		joinNewRoom(socket, roomID);
 
 		socket.emit("room_page_success", "Successfully created a new room.");
-		shared.getIO().emit("update_rooms", rooms);
+		getIO().emit("update_rooms", rooms);
 
 		console.dir({rooms, players}, { depth: null });
 	},
@@ -162,7 +162,7 @@ const eventHandlers = {
 		joinNewRoom(socket, roomID);
 
 		socket.emit("room_page_success", "Successfully joined the room.");
-		shared.getIO().emit("update_rooms", rooms);
+		getIO().emit("update_rooms", rooms);
 
 		console.dir({rooms, players}, { depth: null });
 	},
@@ -183,7 +183,7 @@ const eventHandlers = {
 		leaveOldRoom(socket);
 
 		socket.emit("room_page_success", "Successfully left the room.");
-		shared.getIO().emit("update_rooms", rooms);
+		getIO().emit("update_rooms", rooms);
 
 		console.dir({rooms, players}, { depth: null });
 	},
@@ -206,7 +206,7 @@ const eventHandlers = {
 		const room = rooms[roomID];
 		room.players[socket.id].ready = !room.players[socket.id].ready;
 
-		shared.getIO().emit("update_rooms", rooms);
+		getIO().emit("update_rooms", rooms);
 		socket.emit("room_page_success", "You are " + (room.players[socket.id].ready ? "ready" : "not ready") + ".");
 
 		// Start the game if all players are ready
@@ -231,7 +231,7 @@ const eventHandlers = {
 		if (!player.inGame) {
 			leaveOldRoom(socket);
 			delete players[socket.id];
-			shared.getIO().emit("update_rooms", rooms);
+			getIO().emit("update_rooms", rooms);
 		}
 
 		console.dir({rooms, players}, { depth: null });

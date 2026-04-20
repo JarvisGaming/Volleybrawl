@@ -2,7 +2,7 @@
  * Run with node server/server.js at root directory
  */
 
-const shared = require("./shared.js");
+const { initialize } = require("./shared.js");
 
 const roomController = require("./room_controller.js").eventHandlers;
 const gameController = require("./game_controller.js").eventHandlers;
@@ -21,7 +21,7 @@ const httpServer = createServer(app);
 const io = new Server(httpServer);
 
 // Initialize the shared io instance, so we don't have to pass it explictly into controller functions
-shared.initialize(io);
+initialize(io);
 
 // Handle the web socket connection
 io.on("connection", (socket) => {

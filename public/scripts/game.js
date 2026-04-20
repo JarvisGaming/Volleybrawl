@@ -203,13 +203,15 @@ const game = (function() {
 			}
 
 			class Net extends Sprite {
-				constructor(x, y){
+				constructor(x, y, width, color){
 					super(x, y);
+					this.width = width;
+					this.color = color;
 				}
 				draw(){
 					context.beginPath();
-					context.rect(this.x, this.y, 20, canvasHeight - this.y);
-					context.fillStyle = "black";
+					context.rect(this.x - this.width / 2, this.y, this.width, canvasHeight - this.y);
+					context.fillStyle = this.color;
 					context.fill();
 				}
 			}
@@ -226,7 +228,7 @@ const game = (function() {
 			ball.draw();
 
 			// Net
-			const net = new Net(positions.net.x, positions.net.y);
+			const net = new Net(positions.net.x, positions.net.y, 15, "orange");
 			net.draw();
 		};
 	};

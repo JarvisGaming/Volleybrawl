@@ -1,4 +1,4 @@
-const shared = require("./shared.js");
+const { initialize, getIO, targetFPS, clamp, playerRadius, ballRadius, gamefieldWidth, gamefieldHeight } = require("./shared.js");
 
 /**
  * Represents a connected client.
@@ -92,8 +92,8 @@ function initGameState(){
 	const positions = {
 		player1: {x: 100, y: 100, dx: 0, dy: 0},
 		player2: {x: 700, y: 100, dx: 0, dy: 0},
-		ball: {x: 400, y: 100, dx: 0, dy: 0},
-		net: {x: 390, y: 350, dx: 0, dy: 0},
+		ball: {x: 200, y: 100, dx: 0, dy: 0},
+		net: {x: 400, y: 350, dx: 0, dy: 0},
 	};
 	const statistics = {
 		player1: {score: 0, numJumps: 0, numSmacks: 0},
@@ -126,7 +126,7 @@ function createGame(room) {
 
 function runGame(game){
 	// Run game loop
-	setInterval(doTick, 1000 / shared.targetFPS, game);
+	setInterval(doTick, 1000 / targetFPS, game);
 }
 
 // Process a server tick
@@ -142,7 +142,7 @@ function doTick(game){
  * @param {GameState} gameState
  */
 function runPhysicsCalculations(gameState){
-	function isGrounded(playerPosition){ return playerPosition.y + shared.playerRadius >= shared.gamefieldHeight; }
+	function isGrounded(playerPosition){ return playerPosition.y + playerRadius >= gamefieldHeight; }
 	function isMovingLeft(inputSet){ return inputSet.has("ArrowLeft"); }
 	function isMovingRight(inputSet){ return inputSet.has("ArrowRight"); }
 	function isJumping(inputSet){ return inputSet.has("ArrowUp"); }
@@ -178,22 +178,23 @@ function updatePositions(positions){
 		positions[interactable].y += positions[interactable].dy;
 	}
 
-	// Clamp player position
-	for (const playerID of ["player1", "player2"]){
-		positions[playerID].y = shared.clamp(positions[playerID].y, shared.playerRadius, shared.gamefieldHeight - shared.playerRadius);
-		positions[playerID].x = shared.clamp(positions[playerID].x, shared.playerRadius, shared.gamefieldWidth - shared.playerRadius);
-	}
+	// Clamp player position to their side of the net
+	positions["player1"].y = clamp(positions["player1"].y, playerRadius, gamefieldHeight - playerRadius);
+	positions["player1"].x = clamp(positions["player1"].x, playerRadius, gamefieldWidth / 2 - playerRadius);
+
+	positions["player2"].y = clamp(positions["player2"].y, playerRadius, gamefieldHeight - playerRadius);
+	positions["player2"].x = clamp(positions["player2"].x, gamefieldWidth / 2 + playerRadius, gamefieldWidth - playerRadius);
 
 	// Clamp ball position
 }
 
 function sendPositionsToClients(gameID, positions){
-	shared.getIO().to(gameID).emit("update_positions", positions);
+	getIO().to(gameID).emit("update_positions", positions);
 }
 
 // Sends an event to clients to get player input.
 function getPlayerInputs(gameID){
-	shared.getIO().to(gameID).emit("collect_inputs");
+	getIO().to(gameID).emit("collect_inputs");
 }
 
 const eventHandlers = {
@@ -209,7 +210,7 @@ const eventHandlers = {
 
 		// If both players are ready, start the game
 		if (Object.values(game.players).every(player => player.ready)) {
-			shared.getIO().to(game.gameID).emit("start_game");
+			getIO().to(game.gameID).emit("start_game");
 			runGame(game);
 		}
 
