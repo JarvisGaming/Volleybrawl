@@ -147,39 +147,64 @@ function doTick(game){
 	getPlayerInputs(game.gameID);
 }
 
+
+// Collection of utility functions to help with physics calculations
+function isGrounded(position, radius){ return position.y + radius >= gamefieldHeight; }
+	
+function isMovingLeft(inputSet){ return inputSet.has("ArrowLeft"); }
+function isMovingRight(inputSet){ return inputSet.has("ArrowRight"); }
+function isJumping(inputSet){ return inputSet.has("ArrowUp"); }
+function isSmacking(inputSet){ return inputSet.has(" "); }
+
+function ballIsInSideWall(ballPosition){ return ballPosition.x - ballRadius <= 0 || ballPosition.x + ballRadius >= gamefieldWidth; }
+function ballIsInCeiling(ballPosition){ return ballPosition.y <= ballRadius; }
+function ballIsUnderTopOfNet(ballPosition, netPosition) { return ballPosition.y >= netPosition.y; }
+function ballIsCloseToLeftSideOfNet(ballPosition, netPosition) { return Math.abs(ballPosition.x - (netPosition.x - wallWidth / 2)) <= ballRadius; }
+function ballIsCloseToRightSideOfNet(ballPosition, netPosition) { return Math.abs(ballPosition.x - (netPosition.x + wallWidth / 2)) <= ballRadius; }
+
+function ballIsInNet(ballPosition, netPosition){ 
+	// To prevent the ball from getting stuck in the net (bouncing between its two inner walls),
+	// we check the direction that the ball is going
+	if (ballPosition.dx > 0) return ballIsUnderTopOfNet(ballPosition, netPosition) && ballIsCloseToLeftSideOfNet(ballPosition, netPosition);  // Moving right
+	else return ballIsUnderTopOfNet(ballPosition, netPosition) && ballIsCloseToRightSideOfNet(ballPosition, netPosition);  // Moving left
+}
+
+function ballIsPassingThroughNet(ballPosition, netPosition){
+	// Connect the ball's current position, and its future position
+	// Find the ball's y-height when it passes the two inner walls of the net
+	// Check if the inner wall is relevant based on the direction the ball is headed
+	// If the wall is relevant and we're lower than it, then the ball is passing through the net
+	const netLeftBoundary = netPosition.x - wallWidth / 2;
+	const netRightBoundary = netPosition.x + wallWidth / 2;
+
+	const futureX = ballPosition.x + ballPosition.dx;
+	const futureY = ballPosition.y + ballPosition.dy;
+
+	// Ball won't pass through net if the distance travelled doesn't go over the X coords of the net
+	if (ballPosition.x <= netLeftBoundary && futureX <= netLeftBoundary) return false;
+	if (ballPosition.x >= netRightBoundary && futureX >= netRightBoundary) return false;
+
+	const slope = (futureY - ballPosition.y) / (futureX - ballPosition.x);
+	const ballYAtLeftBoundary = slope * (netLeftBoundary - ballPosition.x) + ballPosition.y;
+	const ballYAtRightBoundary = slope * (netRightBoundary - ballPosition.x) + ballPosition.y;
+
+	if (ballPosition.dx >= 0 && ballYAtLeftBoundary >= netPosition.y) return true;
+	else if (ballPosition.dx <= 0 && ballYAtRightBoundary >= netPosition.y) return true;
+	else return false;
+}
+
+function isTouching(playerPosition, ballPosition){
+	return Math.sqrt(
+		(playerPosition.x - ballPosition.x) ** 2 + 
+		(playerPosition.y - ballPosition.y) ** 2
+	) < playerRadius + ballRadius;
+}
+
 /**
  * Update the velocities of all game objects.
  * @param {GameState} gameState
  */
 function runPhysicsCalculations(gameState){
-	function isGrounded(position, radius){ return position.y + radius >= gamefieldHeight; }
-	
-	function isMovingLeft(inputSet){ return inputSet.has("ArrowLeft"); }
-	function isMovingRight(inputSet){ return inputSet.has("ArrowRight"); }
-	function isJumping(inputSet){ return inputSet.has("ArrowUp"); }
-	function isSmacking(inputSet){ return inputSet.has(" "); }
-
-	function ballIsInSideWall(ballPosition){ return ballPosition.x - ballRadius <= 0 || ballPosition.x + ballRadius >= gamefieldWidth; }
-	function ballIsInCeiling(ballPosition){ return ballPosition.y <= ballRadius; }
-	function ballIsInNet(ballPosition, wallPosition){ 
-		const ballIsUnderTopOfNet = ballPosition.y >= wallPosition.y;
-		const ballIsCloseToLeftSideOfNet = Math.abs(ballPosition.x - (wallPosition.x - wallWidth / 2)) <= ballRadius / 2;
-		const ballIsCloseToRightSideOfNet = Math.abs(ballPosition.x - (wallPosition.x + wallWidth / 2)) <= ballRadius / 2;
-
-		// To prevent the ball from getting stuck in the net (bouncing between its two inner walls),
-		// we check the direction that the ball is going
-		if (ballPosition.dx > 0) return ballIsUnderTopOfNet && ballIsCloseToLeftSideOfNet;  // Moving right
-		else return ballIsUnderTopOfNet && ballIsCloseToRightSideOfNet;  // Moving left
-	}
-
-	function isTouching(playerPosition, ballPosition){
-		return Math.sqrt(
-			(playerPosition.x - ballPosition.x) ** 2 + 
-			(playerPosition.y - ballPosition.y) ** 2
-		) < playerRadius + ballRadius;
-	}
-
-	// PHYSICS CALCULATIONS
 	const inputs = gameState.inputs;
 	const positions = gameState.positions;
 
@@ -231,7 +256,6 @@ function runPhysicsCalculations(gameState){
 			const totalVelocity = isSmacking(inputs[playerID]) ? 40 : 25;
 			ballPosition.dx = totalVelocity * Math.cos(angle);
 			ballPosition.dy = totalVelocity * Math.sin(angle);
-
 		}
 	}
 
@@ -244,17 +268,30 @@ function runPhysicsCalculations(gameState){
  * @param {Positions} positions 
  */
 function updatePositions(positions){
-	for (const interactable of Object.keys(positions)){
-		positions[interactable].x += positions[interactable].dx;
-		positions[interactable].y += positions[interactable].dy;
+	// Handle ball updates separately to prevent it from phasing through net
+	for (const gameObject of Object.keys(positions)){
+		if (gameObject == "ball") continue;
+		positions[gameObject].x += positions[gameObject].dx;
+		positions[gameObject].y += positions[gameObject].dy;
 	}
+
+	// Prevent ball from phasing through net
+	if (ballIsPassingThroughNet(positions.ball, positions.net)){
+		// Clamp to left of net
+		if (positions.ball.dx >= 0) positions.ball.x = positions.net.x - ballRadius;
+
+		// Clamp to right of net
+		else if (positions.ball.dx <= 0) positions.ball.x = positions.net.x + ballRadius;
+	}
+	else { positions.ball.x += positions.ball.dx; }
+	positions.ball.y += positions.ball.dy;
 
 	// Clamp player position to their side of the net
 	positions["player1"].y = clamp(positions["player1"].y, playerRadius, gamefieldHeight - playerRadius);
-	positions["player1"].x = clamp(positions["player1"].x, playerRadius, gamefieldWidth / 2 - wallWidth / 2 - playerRadius);
+	positions["player1"].x = clamp(positions["player1"].x, playerRadius, positions.net.x - wallWidth / 2 - playerRadius);
 
 	positions["player2"].y = clamp(positions["player2"].y, playerRadius, gamefieldHeight - playerRadius);
-	positions["player2"].x = clamp(positions["player2"].x, gamefieldWidth / 2 + wallWidth / 2 + playerRadius, gamefieldWidth - playerRadius);
+	positions["player2"].x = clamp(positions["player2"].x, positions.net.x + wallWidth / 2 + playerRadius, gamefieldWidth - playerRadius);
 
 	// Clamp ball position
 	positions.ball.y = clamp(positions.ball.y, ballRadius, gamefieldHeight - ballRadius);
