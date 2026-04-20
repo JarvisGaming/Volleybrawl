@@ -139,8 +139,14 @@ const game = (function() {
 		let positions = null;
 
 		// Listen to player inputs
-		const queuedInputs = new Set();
-		window.addEventListener("keydown", (e) => queuedInputs.add(e.key));
+		const playerInputs = new Set();
+		window.addEventListener("keydown", (e) => {
+			playerInputs.add(e.key);
+		});
+
+		window.addEventListener("keyup", (e) => {
+			playerInputs.delete(e.key);
+		});
 
 		// Displays messages for failed operations in the game page.
 		socket.on("game_page_error", (msg) => {
@@ -154,14 +160,13 @@ const game = (function() {
 
 		// Send inputs to the server
 		socket.on("collect_inputs", () => {
-			socket.emit("send_inputs", queuedInputs);
-			queuedInputs.clear();
+			// Set<string> is not serializable, need to convert to array first before casting it back on the server side
+			socket.emit("send_inputs", [...playerInputs]);
 		});
 
 		// Every server tick, clients receive updated position information
 		socket.on("update_positions", (updatedPositions) => {
 			positions = updatedPositions;
-			console.log(positions);
 			drawGameFrame();
 		});
 

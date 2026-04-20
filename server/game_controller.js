@@ -38,6 +38,11 @@ const shared = require("./shared.js");
  *   player1: PlayerStatistics,
  *   player2: PlayerStatistics,
  * }} statistics
+ * @property {{
+ * 	 player1: Set<string>,
+ * 	 player2: Set<string>,
+ * }} inputs
+ * Each set stores all the keys the player has pressed in between server ticks.
  */
 
 /**
@@ -94,7 +99,11 @@ function initGameState(){
 		player1: {score: 0, numJumps: 0, numSmacks: 0},
 		player2: {score: 0, numJumps: 0, numSmacks: 0},
 	};
-	return {positions, statistics};
+	const inputs = {
+		player1: new Set(),
+		player2: new Set(),
+	};
+	return {positions, statistics, inputs};
 }
 
 /**
@@ -122,8 +131,10 @@ function runGame(game){
 
 // Process a server tick
 function doTick(game){
+	// runPhysicsCalculations(game.state);
 	updatePositions(game.state.positions);
 	sendPositionsToClients(game.gameID, game.state.positions);
+	getPlayerInputs(game.gameID);
 }
 
 // Run physics calculations to update positions
@@ -139,13 +150,18 @@ function sendPositionsToClients(gameID, positions){
 	// console.dir(positions, { depth: null });
 }
 
+// Sends an event to clients to get player input.
+function getPlayerInputs(gameID){
+	shared.getIO().to(gameID).emit("collect_inputs");
+}
+
 const eventHandlers = {
 	/**
 	 * Event handler for toggling the ready status of a player in a specific game.
 	 * If both players are ready, run the game.
 	 * @param {import("socket.io").Socket} socket 
 	 */
-	gameLoaded(socket) {
+	gameLoaded(socket){
 		const player = players[socket.id];
 		const game = games[player.joinedGameID];
 		player.ready = true;
@@ -158,6 +174,20 @@ const eventHandlers = {
 
 		console.dir({ games, players }, { depth: null });
 	},
+
+	/**
+	 * Event handler to updated the game's state with the player's latest inputs.
+	 * @param {import("socket.io").Socket} socket 
+	 * @param {Set<string>} inputs 
+	 */
+	updatePlayerInputs(socket, inputs){
+		const player = players[socket.id];
+		const playerID = player.playerID;
+		const game = games[player.joinedGameID];
+		game.state.inputs[playerID] = inputs;
+
+		console.dir(game.state.inputs, { depth: null });
+	}
 };
 
 module.exports = { createGame, eventHandlers };
