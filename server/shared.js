@@ -12,7 +12,7 @@ let io = null;
  * Initialize shared instances.
  * @param {import("socket.io").Server} ioInstance 
  */
-const initialize = function(ioInstance) {
+function initialize(ioInstance) {
 	io = ioInstance;
 };
 
@@ -24,6 +24,21 @@ const getIO = function() {
 	return io;
 };
 
-const targetFPS = 30;
+const targetFPS = 60;
+const playerRadius = 50;
+const ballRadius = 25;
+const gamefieldWidth = 800;
+const gamefieldHeight = 600;
 
-module.exports = { initialize, getIO, targetFPS };
+/**
+ * Clamps a given number between two bounds.
+ * @param {Number} number 
+ * @param {Number} lowerBound 
+ * @param {Number} upperBound 
+ * @returns {Number}
+ */
+function clamp(number, lowerBound, upperBound){
+	return Math.min(Math.max(number, lowerBound), upperBound);
+}
+
+module.exports = { initialize, getIO, targetFPS, clamp, playerRadius, ballRadius, gamefieldWidth, gamefieldHeight };

@@ -178,6 +178,9 @@ const game = (function() {
 			const context = $("#game-canvas").get(0).getContext("2d");
 			context.clearRect(0, 0, context.canvas.width, context.canvas.width);
 			
+			const canvasWidth = 800;
+			const canvasHeight = 600;
+
 			class Sprite {
 				constructor(x, y){
 					this.x = x;
@@ -205,7 +208,7 @@ const game = (function() {
 				}
 				draw(){
 					context.beginPath();
-					context.rect(this.x, this.y, 20, 300);
+					context.rect(this.x, this.y, 20, canvasHeight - this.y);
 					context.fillStyle = "black";
 					context.fill();
 				}

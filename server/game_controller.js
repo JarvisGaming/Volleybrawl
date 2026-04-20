@@ -90,10 +90,10 @@ function createGamePlayer(name, ithPlayer, gameID) {
  */
 function initGameState(){
 	const positions = {
-		player1: {x: 100, y: 100, dx: 1, dy: 0},
-		player2: {x: 700, y: 100, dx: -1, dy: 0},
-		ball: {x: 400, y: 100, dx: 0, dy: 1},
-		net: {x: 390, y: 300, dx: 0, dy: 1},
+		player1: {x: 100, y: 100, dx: 0, dy: 0},
+		player2: {x: 700, y: 100, dx: 0, dy: 0},
+		ball: {x: 400, y: 100, dx: 0, dy: 0},
+		net: {x: 390, y: 350, dx: 0, dy: 0},
 	};
 	const statistics = {
 		player1: {score: 0, numJumps: 0, numSmacks: 0},
@@ -131,23 +131,64 @@ function runGame(game){
 
 // Process a server tick
 function doTick(game){
-	// runPhysicsCalculations(game.state);
+	runPhysicsCalculations(game.state);
 	updatePositions(game.state.positions);
 	sendPositionsToClients(game.gameID, game.state.positions);
 	getPlayerInputs(game.gameID);
 }
 
-// Run physics calculations to update positions
+/**
+ * Update the velocities of all game objects.
+ * @param {GameState} gameState
+ */
+function runPhysicsCalculations(gameState){
+	function isGrounded(playerPosition){ return playerPosition.y + shared.playerRadius >= shared.gamefieldHeight; }
+	function isMovingLeft(inputSet){ return inputSet.has("ArrowLeft"); }
+	function isMovingRight(inputSet){ return inputSet.has("ArrowRight"); }
+	function isJumping(inputSet){ return inputSet.has("ArrowUp"); }
+
+	// Update player velocities
+	for (const playerID of ["player1", "player2"]){
+		const inputSet = gameState.inputs[playerID];
+
+		// Handle horizontal movement
+
+		if (isMovingLeft(inputSet)) gameState.positions[playerID].dx -= 5;
+		if (isMovingRight(inputSet)) gameState.positions[playerID].dx += 5;
+
+		// Friction
+		gameState.positions[playerID].dx *= 0.6;
+
+		// Handle vertical movement
+		// If the player is on / in the ground, stop falling
+		if (isGrounded(gameState.positions[playerID])) gameState.positions[playerID].dy = 0;
+
+		// Jumping
+		if (isJumping(inputSet) && isGrounded(gameState.positions[playerID])) gameState.positions[playerID].dy -= 20;
+
+		// Gravity
+		if (!isGrounded(gameState.positions[playerID])) gameState.positions[playerID].dy += 1;
+	}
+}
+
+// Move the players, the net, and the ball based on velocity.
 function updatePositions(positions){
 	for (const interactable of Object.keys(positions)){
 		positions[interactable].x += positions[interactable].dx;
 		positions[interactable].y += positions[interactable].dy;
 	}
+
+	// Clamp player position
+	for (const playerID of ["player1", "player2"]){
+		positions[playerID].y = shared.clamp(positions[playerID].y, shared.playerRadius, shared.gamefieldHeight - shared.playerRadius);
+		positions[playerID].x = shared.clamp(positions[playerID].x, shared.playerRadius, shared.gamefieldWidth - shared.playerRadius);
+	}
+
+	// Clamp ball position
 }
 
 function sendPositionsToClients(gameID, positions){
 	shared.getIO().to(gameID).emit("update_positions", positions);
-	// console.dir(positions, { depth: null });
 }
 
 // Sends an event to clients to get player input.
@@ -186,7 +227,7 @@ const eventHandlers = {
 		const game = games[player.joinedGameID];
 		game.state.inputs[playerID] = inputs;
 
-		console.dir(game.state.inputs, { depth: null });
+		// console.dir(game.state.inputs, { depth: null });
 	}
 };
 
