@@ -135,6 +135,13 @@ const game = (function() {
 	};
 
 	const initGamePage = function() {
+		// Store position information sent from server
+		let positions = null;
+
+		// Listen to player inputs
+		const queuedInputs = new Set();
+		window.addEventListener("keydown", (e) => queuedInputs.add(e.key));
+
 		// Displays messages for failed operations in the game page.
 		socket.on("game_page_error", (msg) => {
 			$("#game-message").text(msg);
@@ -145,11 +152,26 @@ const game = (function() {
 			$("#game-message").text("The game has started!");
 		});
 
-		socket.on("draw_game_frame", (positions) => {
+		// Send inputs to the server
+		socket.on("collect_inputs", () => {
+			socket.emit("send_inputs", queuedInputs);
+			queuedInputs.clear();
+		});
+
+		// Every server tick, clients receive updated position information
+		socket.on("update_positions", (updatedPositions) => {
+			positions = updatedPositions;
+			console.log(positions);
+			drawGameFrame();
+		});
+
+		// Every client frame, clients rerender the canvas based on the stored positions
+		function drawGameFrame(){
 			/**
 			 * @type {CanvasRenderingContext2D}
 			 */
 			const context = $("#game-canvas").get(0).getContext("2d");
+			context.clearRect(0, 0, context.canvas.width, context.canvas.width);
 			
 			class Sprite {
 				constructor(x, y){
@@ -198,7 +220,7 @@ const game = (function() {
 			// Net
 			const net = new Net(positions.net.x, positions.net.y);
 			net.draw();
-		});
+		};
 	};
 
 	const init = function() {

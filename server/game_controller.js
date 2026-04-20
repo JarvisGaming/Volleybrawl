@@ -4,15 +4,18 @@ const shared = require("./shared.js");
  * Represents a connected client.
  * @typedef {Object} GamePlayer
  * @property {string} name
- * @property {string|null} joinedGameID - The gameID of the game the player has joined, or null if not in any game.
+ * @property {Number} playerID - Whether the player is player 1 or 2.
+ * @property {string} joinedGameID - The gameID of the game the player has joined.
  * @property {boolean} ready - Whether the player has loaded the game. Meaningless if not in any game.
  */
 
 /**
- * Represents the position of a player, the ball, or the net.
+ * Represents the position and velocity of a player, the ball, or the net.
  * @typedef {Object} Position
  * @property {Number} x
  * @property {Number} y
+ * @property {Number} dx
+ * @property {Number} dy
  */
 
 /**
@@ -60,9 +63,10 @@ const players = {};
  * @param {string} name 
  * @returns {GamePlayer}
  */
-function createPlayer(name, gameID) {
+function createPlayer(name, playerID, gameID) {
 	return {
 		name,
+		playerID,
 		joinedGameID: gameID,
 		ready: false,
 	};
@@ -87,7 +91,7 @@ function createGame(room) {
 
 	// Update player list in controller and game
 	for (const [socketID, player] of Object.entries(room.players)) {
-		players[socketID] = createPlayer(player.name, gameID);
+		players[socketID] = createPlayer(player.name, Object.keys(players).length + 1, gameID);
 		games[gameID].players[socketID] = players[socketID];
 	}
 
@@ -95,16 +99,37 @@ function createGame(room) {
 };
 
 function runGame(gameID){
-	console.log("Game running");
-
-	// const positions = games[gameID].state.positions;
-	const positions = {
-		player1: {x: 100, y: 100},
-		player2: {x: 700, y: 100},
-		ball: {x: 400, y: 100},
-		net: {x: 390, y: 300},
+	const initialPositions = {
+		player1: {x: 100, y: 100, dx: 1, dy: 0},
+		player2: {x: 700, y: 100, dx: -1, dy: 0},
+		ball: {x: 400, y: 100, dx: 0, dy: 1},
+		net: {x: 390, y: 300, dx: 0, dy: 1},
 	};
-	shared.getIO().to(gameID).emit("draw_game_frame", positions);
+
+	const game = games[gameID];
+	game.state.positions = initialPositions;
+
+	// Run game loop
+	setInterval(doTick, 1000 / shared.targetFPS, game);
+}
+
+// Process a server tick
+function doTick(game){
+	updatePositions(game.state.positions);
+	sendPositionsToClients(game.gameID, game.state.positions);
+}
+
+// Run physics calculations to update positions
+function updatePositions(positions){
+	for (const interactable of Object.keys(positions)){
+		positions[interactable].x += positions[interactable].dx;
+		positions[interactable].y += positions[interactable].dy;
+	}
+}
+
+function sendPositionsToClients(gameID, positions){
+	shared.getIO().to(gameID).emit("update_positions", positions);
+	// console.dir(positions, { depth: null });
 }
 
 const eventHandlers = {

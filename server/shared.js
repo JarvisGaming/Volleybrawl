@@ -24,4 +24,6 @@ const getIO = function() {
 	return io;
 };
 
-module.exports = { initialize, getIO };
+const targetFPS = 30;
+
+module.exports = { initialize, getIO, targetFPS };
