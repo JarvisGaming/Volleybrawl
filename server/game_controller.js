@@ -19,6 +19,14 @@ const { getIO, targetFPS, clamp, playerRadius, ballRadius, wallWidth, gamefieldW
  */
 
 /**
+ * @typedef {Object} Positions
+ * @property {Position} player1
+ * @property {Position} player2
+ * @property {Position} ball
+ * @property {Position} net
+ */
+
+/**
  * Information about a player's performance displayed at the end of a game.
  * @typedef {Object} PlayerStatistics
  * @property {Number} score
@@ -28,12 +36,7 @@ const { getIO, targetFPS, clamp, playerRadius, ballRadius, wallWidth, gamefieldW
 
 /**
  * @typedef {Object} GameState
- * @property {{
- *   player1: Position,
- *   player2: Position,
- *   ball: Position,
- *   net: Position
- * }} positions
+ * @property {Positions} positions
  * @property {{
  *   player1: PlayerStatistics,
  *   player2: PlayerStatistics,
@@ -124,12 +127,19 @@ function createGame(room) {
 	console.dir({ games, players }, { depth: null });
 };
 
+/**
+ * Start the game loop.
+ * @param {Game} game 
+ */
 function runGame(game){
-	// Run game loop
 	setInterval(doTick, 1000 / targetFPS, game);
 }
 
-// Process a server tick
+/**
+ * Process a server tick, performing physics calculations and 
+ * sending back the updated position information to clients for rendering.
+ * @param {Game} game 
+ */
 function doTick(game){
 	runPhysicsCalculations(game.state);
 	updatePositions(game.state.positions);
@@ -149,15 +159,12 @@ function runPhysicsCalculations(gameState){
 	function isJumping(inputSet){ return inputSet.has("ArrowUp"); }
 	function isSmacking(inputSet){ return inputSet.has(" "); }
 
-	function ballIsInSideWall(position){ return position.x - ballRadius <= 0 || position.x + ballRadius >= gamefieldWidth; }
+	function ballIsInSideWall(ballPosition){ return ballPosition.x - ballRadius <= 0 || ballPosition.x + ballRadius >= gamefieldWidth; }
+	function ballIsInCeiling(ballPosition){ return ballPosition.y <= ballRadius; }
 	function ballIsInNet(ballPosition, wallPosition){ 
-		console.dir({ballPosition, wallPosition}, {depth: null});
-
 		const ballIsUnderTopOfNet = ballPosition.y >= wallPosition.y;
 		const ballIsCloseToLeftSideOfNet = Math.abs(ballPosition.x - (wallPosition.x - wallWidth / 2)) <= ballRadius / 2;
 		const ballIsCloseToRightSideOfNet = Math.abs(ballPosition.x - (wallPosition.x + wallWidth / 2)) <= ballRadius / 2;
-
-		// console.dir({ballIsUnderTopOfNet, ballIsCloseToLeftSideOfNet, ballIsCloseToRightSideOfNet}, {depth: null});
 
 		// To prevent the ball from getting stuck in the net (bouncing between its two inner walls),
 		// we check the direction that the ball is going
@@ -168,50 +175,74 @@ function runPhysicsCalculations(gameState){
 	function isTouching(playerPosition, ballPosition){
 		return Math.sqrt(
 			(playerPosition.x - ballPosition.x) ** 2 + 
-			(playerPosition.y - ballPosition.y)
+			(playerPosition.y - ballPosition.y) ** 2
 		) < playerRadius + ballRadius;
 	}
 
+	// PHYSICS CALCULATIONS
+	const inputs = gameState.inputs;
+	const positions = gameState.positions;
+
 	// Update player velocities
 	for (const playerID of ["player1", "player2"]){
-		const inputSet = gameState.inputs[playerID];
+		const inputSet = inputs[playerID];
 
 		// Handle horizontal movement
-		if (isMovingLeft(inputSet)) gameState.positions[playerID].dx -= 5;
-		if (isMovingRight(inputSet)) gameState.positions[playerID].dx += 5;
+		if (isMovingLeft(inputSet)) positions[playerID].dx -= 5;
+		if (isMovingRight(inputSet)) positions[playerID].dx += 5;
 
 		// Friction
-		gameState.positions[playerID].dx *= 0.6;
+		positions[playerID].dx *= 0.6;
 
 		// Handle vertical movement
 		// If the player is on / in the ground, stop falling
-		if (isGrounded(gameState.positions[playerID], playerRadius)) gameState.positions[playerID].dy = 0;
+		if (isGrounded(positions[playerID], playerRadius)) positions[playerID].dy = 0;
 
 		// Jumping
-		if (isJumping(inputSet) && isGrounded(gameState.positions[playerID], playerRadius)) gameState.positions[playerID].dy -= 20;
+		if (isJumping(inputSet) && isGrounded(positions[playerID], playerRadius)) positions[playerID].dy -= 30;
 
 		// Gravity
-		if (!isGrounded(gameState.positions[playerID], playerRadius)) gameState.positions[playerID].dy += 1;
+		if (!isGrounded(positions[playerID], playerRadius)) positions[playerID].dy += 1.5;
 	}
 
 	// Update ball velocities
 	// If the ball is on / in the ground, bounce perfectly elastically
-	if (isGrounded(gameState.positions.ball, ballRadius)) gameState.positions.ball.dy *= -1;
+	if (isGrounded(positions.ball, ballRadius)) positions.ball.dy *= -1;
 
 	// Gravity
-	if (!isGrounded(gameState.positions.ball, ballRadius)) gameState.positions.ball.dy += 1;
+	if (!isGrounded(positions.ball, ballRadius)) positions.ball.dy += 1;
 
 	// If the ball touches a side wall, bounce perfectly elastically
-	if (ballIsInSideWall(gameState.positions.ball)) gameState.positions.ball.dx *= -1;
+	if (ballIsInSideWall(positions.ball)) positions.ball.dx *= -1;
+
+	// If the ball hits the ceiling, bounce perfectly elastically
+	if (ballIsInCeiling(positions.ball)) positions.ball.dy *= -1;
 
 	// If the ball touches a player, override the velocity entirely (send at a fixed speed, relative to angle between player and ball)
-	// Also check if player is smacking
+	for (const playerID of ["player1", "player2"]){
+		const playerPosition = positions[playerID];
+		const ballPosition = positions.ball;
+
+		if (isTouching(playerPosition, ballPosition)){
+			// Calculate angle between player and ball
+			const angle = Math.atan2(ballPosition.y - playerPosition.y, ballPosition.x - playerPosition.x);
+
+			// Bounce ball off of player
+			const totalVelocity = isSmacking(inputs[playerID]) ? 40 : 25;
+			ballPosition.dx = totalVelocity * Math.cos(angle);
+			ballPosition.dy = totalVelocity * Math.sin(angle);
+
+		}
+	}
 
 	// Ball always bounces off net elastically
-	if (ballIsInNet(gameState.positions.ball, gameState.positions.net)) gameState.positions.ball.dx *= -1;
+	if (ballIsInNet(positions.ball, positions.net)) positions.ball.dx *= -1;
 }
 
-// Move the players, the net, and the ball based on velocity.
+/**
+ * Move the players, the net, and the ball based on velocity.
+ * @param {Positions} positions 
+ */
 function updatePositions(positions){
 	for (const interactable of Object.keys(positions)){
 		positions[interactable].x += positions[interactable].dx;
@@ -220,21 +251,29 @@ function updatePositions(positions){
 
 	// Clamp player position to their side of the net
 	positions["player1"].y = clamp(positions["player1"].y, playerRadius, gamefieldHeight - playerRadius);
-	positions["player1"].x = clamp(positions["player1"].x, playerRadius, gamefieldWidth / 2 - playerRadius);
+	positions["player1"].x = clamp(positions["player1"].x, playerRadius, gamefieldWidth / 2 - wallWidth / 2 - playerRadius);
 
 	positions["player2"].y = clamp(positions["player2"].y, playerRadius, gamefieldHeight - playerRadius);
-	positions["player2"].x = clamp(positions["player2"].x, gamefieldWidth / 2 + playerRadius, gamefieldWidth - playerRadius);
+	positions["player2"].x = clamp(positions["player2"].x, gamefieldWidth / 2 + wallWidth / 2 + playerRadius, gamefieldWidth - playerRadius);
 
 	// Clamp ball position
 	positions.ball.y = clamp(positions.ball.y, ballRadius, gamefieldHeight - ballRadius);
 	positions.ball.x = clamp(positions.ball.x, 0 + ballRadius, gamefieldWidth - ballRadius);
 }
 
+/**
+ * Send updated game object positions to the two players in the game.
+ * @param {string} gameID 
+ * @param {Positions} positions 
+ */
 function sendPositionsToClients(gameID, positions){
 	getIO().to(gameID).emit("update_positions", positions);
 }
 
-// Sends an event to clients to get player input.
+/**
+ * Ask clients to send back player inputs.
+ * @param {string} gameID 
+ */
 function getPlayerInputs(gameID){
 	getIO().to(gameID).emit("collect_inputs");
 }
