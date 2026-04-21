@@ -140,6 +140,35 @@ function createGame(room) {
 };
 
 /**
+ * Handle the cases where the player readies up by loading in the game, 
+ * and by clicking the restart button at the end of a game.
+ * @param {import("socket.io").Socket} socket
+ * @param {Boolean} resetState
+ * Whether to reinitialize the game state.
+ */
+function handlePlayerReady(socket, resetState){
+	// Set player to be ready
+	const player = players[socket.id];
+	const game = games[player.joinedGameID];
+	player.ready = true;
+
+	// If both players are ready, start the game
+	if (Object.keys(game.players).length == 2 && Object.values(game.players).every(player => player.ready)) {
+
+		// Reset game to default state
+		if (resetState === true){
+			game.state = initGameState();
+			game.gameLoopIntervalID = null;
+		}
+		
+		getIO().to(game.gameID).emit("start_game");
+		startRound(game);
+	}
+
+	console.dir({ games, players }, { depth: null });
+}
+
+/**
  * Start the game loop.
  * @param {Game} game 
  */
@@ -247,22 +276,12 @@ function processGameEnd(game){
 
 const eventHandlers = {
 	/**
-	 * Event handler for toggling the ready status of a player in a specific game.
+	 * Event handler for set the ready status of a player in a specific game.
 	 * If both players are ready, run the game.
 	 * @param {import("socket.io").Socket} socket 
 	 */
 	gameLoaded(socket){
-		const player = players[socket.id];
-		const game = games[player.joinedGameID];
-		player.ready = true;
-
-		// If both players are ready, start the game
-		if (Object.keys(game.players).length == 2 && Object.values(game.players).every(player => player.ready)) {
-			getIO().to(game.gameID).emit("start_game");
-			startRound(game);
-		}
-
-		console.dir({ games, players }, { depth: null });
+		handlePlayerReady(socket, false);
 	},
 
 	/**
@@ -280,30 +299,12 @@ const eventHandlers = {
 	},
 
 	/**
-	 * Event handler to toggle the player's ready status on the results screen.
+	 * Event handler to set the player's ready status on the results screen.
 	 * If both players are ready, the game restarts.
-	 * isn't this almost the exact same as gameLoaded
 	 * @param {import("socket.io").Socket} socket 
 	 */
 	playerReadyToRestart(socket){
-		const player = players[socket.id];
-		const gameID = player.joinedGameID;
-		const game = games[gameID];
-
-		// Player is ready
-		player.ready = true;
-
-		// If both players are ready, start the game
-		if (Object.keys(game.players).length == 2 && Object.values(game.players).every(player => player.ready)) {
-			// Reset game to default state
-			game.state = initGameState();
-			game.gameLoopIntervalID = null;
-
-			getIO().to(game.gameID).emit("start_game");
-			startRound(game);
-		}
-
-		console.dir({ games, players }, { depth: null });
+		handlePlayerReady(socket, true);
 	},
 
 	/**
@@ -319,6 +320,7 @@ const eventHandlers = {
 
 		// Remove the player from the game, and from the player variable in the controller
 		// The socket is automatically removed from the socket.io room
+		// But if the player e.g. returns to lobby, he will need to be manually removed from room
 		delete game.players[socket.id];
 		delete players[socket.id];
 

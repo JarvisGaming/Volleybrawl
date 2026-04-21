@@ -161,16 +161,19 @@ const game = (function() {
 			function windowKeyDown(e){ playerInputs.add(e.key); }
 			function windowKeyUp(e){ playerInputs.delete(e.key); }
 
+			// Remove existing listeners to prevent adding multiple
 			window.removeEventListener("keydown", windowKeyDown);
 			window.removeEventListener("keyup", windowKeyUp);
 			$("#restart-game-button").off("click");
 			$("#return-to-lobby-button").off("click");
 
+			// Add event listeners
 			window.addEventListener("keydown", windowKeyDown);
 			window.addEventListener("keyup", windowKeyUp);
 	
 			$("#restart-game-button").on("click", function() {
 				socket.emit("restart_ready");
+				$("#game-message").text("Waiting for opponent to restart...");
 			});
 			
 			// $("#return-to-lobby-button").on("click", function() {
