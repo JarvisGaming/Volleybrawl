@@ -128,7 +128,7 @@ function initGameState(){
 function createGame(room) {
 	// Reuse roomID as gameID
 	const gameID = room.roomID;
-	games[gameID] = { gameID, players: {}, state: initGameState(), gameLoop: null };
+	games[gameID] = { gameID, players: {}, state: initGameState(), gameLoopIntervalID: null };
 
 	// Update player list in controller and game
 	for (const [socketID, player] of Object.entries(room.players)) {
@@ -241,6 +241,8 @@ function processGameEnd(game){
 	const statistics = game.state.statistics;
 
 	getIO().to(game.gameID).emit("game_end", statistics);
+
+	console.dir({ games, players }, { depth: null });
 }
 
 const eventHandlers = {
@@ -264,7 +266,7 @@ const eventHandlers = {
 	},
 
 	/**
-	 * Event handler to updated the game's state with the player's latest inputs.
+	 * Event handler to update the game's state with the player's latest inputs.
 	 * @param {import("socket.io").Socket} socket 
 	 * @param {Set<string>} inputs 
 	 */
@@ -274,7 +276,34 @@ const eventHandlers = {
 		const game = games[player.joinedGameID];
 		game.state.inputs[playerID] = inputs;
 
-		// console.dir(game.state.inputs, { depth: null });
+		console.dir(game.state.inputs, { depth: null });
+	},
+
+	/**
+	 * Event handler to toggle the player's ready status on the results screen.
+	 * If both players are ready, the game restarts.
+	 * isn't this almost the exact same as gameLoaded
+	 * @param {import("socket.io").Socket} socket 
+	 */
+	playerReadyToRestart(socket){
+		const player = players[socket.id];
+		const gameID = player.joinedGameID;
+		const game = games[gameID];
+
+		// Player is ready
+		player.ready = true;
+
+		// If both players are ready, start the game
+		if (Object.keys(game.players).length == 2 && Object.values(game.players).every(player => player.ready)) {
+			// Reset game to default state
+			game.state = initGameState();
+			game.gameLoopIntervalID = null;
+
+			getIO().to(game.gameID).emit("start_game");
+			startRound(game);
+		}
+
+		console.dir({ games, players }, { depth: null });
 	},
 
 	/**

@@ -59,16 +59,25 @@ const game = (function() {
 	};
 
 	const initRoomListingPage = function() {
-		// Not included in setRoomButtons() since it is not dynamically generated, so we don't need to re-attach event handlers to it
-		$("#create-room-button").on("click", function() {
-			socket.emit("create_room");
-		});
-		
+		$("#room-message").text("");
+
 		/**
-		 * Attach event handlers to the buttons of each room.
+		 * Attach event handlers to the buttons of each room, as well as the create room button.
 		 * This is called every time the room listing is updated, since rooms are dynamically generated.
+		 * To prevent adding the listeners multiple times (e.g. the user returns to this menu after a game),
+		 * we remove the event listeners first.
 		 */
 		function setRoomButtons(){
+			// Remove already existing event listeners (if any)
+			$("#create-room-button").off("click");
+			$(".join-room-button").off("click");
+			$(".leave-room-button").off("click");
+			$(".ready-button").off("click");
+
+			$("#create-room-button").on("click", function() {
+				socket.emit("create_room");
+			});
+
 			$(".join-room-button").on("click", function(e) {
 				socket.emit("join_room", $(e.currentTarget).attr("data-roomid"));
 			});
@@ -142,19 +151,35 @@ const game = (function() {
 
 		// Listen to player inputs
 		const playerInputs = new Set();
-		window.addEventListener("keydown", (e) => {
-			playerInputs.add(e.key);
-		});
 
-		window.addEventListener("keyup", (e) => {
-			playerInputs.delete(e.key);
-		});
+		function hideMessageAndButtons(){
+			$("#game-message").text("");
+			$("#game-buttons").hide();
+		};
 
-		// $("#restart-game-button").addEventListener("click", () => {
-		// });
+		function setEventListeners(){
+			function windowKeyDown(e){ playerInputs.add(e.key); }
+			function windowKeyUp(e){ playerInputs.delete(e.key); }
 
-		// $("#return-to-lobby-button").addEventListener("click", () => {
-		// });
+			window.removeEventListener("keydown", windowKeyDown);
+			window.removeEventListener("keyup", windowKeyUp);
+			$("#restart-game-button").off("click");
+			$("#return-to-lobby-button").off("click");
+
+			window.addEventListener("keydown", windowKeyDown);
+			window.addEventListener("keyup", windowKeyUp);
+	
+			$("#restart-game-button").on("click", function() {
+				socket.emit("restart_ready");
+			});
+			
+			// $("#return-to-lobby-button").on("click", function() {
+			// 	let playerName = $("#join-name").val().trim();
+			// 	socket.emit("return_to_room_listing", playerName);
+
+			// 	$("#game-page").hide();
+			// });
+		}
 
 		// Displays messages for failed operations in the game page.
 		socket.on("game_page_error", (msg) => {
@@ -162,6 +187,8 @@ const game = (function() {
 		});
 
 		socket.on("start_game", () => {
+			hideMessageAndButtons();
+			setEventListeners();
 			$("#player1-score").text(0);
 			$("#player2-score").text(0);
 		});

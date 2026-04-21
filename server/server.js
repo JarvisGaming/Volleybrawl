@@ -35,6 +35,7 @@ io.on("connection", (socket) => {
 	// Game controller
 	socket.on("game_loaded", () => gameController.gameLoaded(socket));
 	socket.on("send_inputs", (inputsArray) => gameController.updatePlayerInputs(socket, new Set(inputsArray)));
+	socket.on("restart_ready", () => gameController.playerReadyToRestart(socket));
 
 	// Handle disconnect across controllers (each one will check whether the player is in their player list and do the necessary clean up if so)
 	socket.on("disconnect", () => {
