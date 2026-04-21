@@ -24,13 +24,6 @@ const getIO = function() {
 	return io;
 };
 
-const targetFPS = 60;
-const playerRadius = 50;
-const ballRadius = 25;
-const netWidth = 15;
-const gamefieldWidth = 800;
-const gamefieldHeight = 600;
-
 /**
  * Clamps a given number between two bounds.
  * @param {Number} number 
@@ -42,4 +35,16 @@ function clamp(number, lowerBound, upperBound){
 	return Math.min(Math.max(number, lowerBound), upperBound);
 }
 
-module.exports = { initialize, getIO, targetFPS, clamp, playerRadius, ballRadius, netWidth, gamefieldWidth, gamefieldHeight };
+const targetFPS = 60;
+
+const gamefieldWidth = 800;
+const gamefieldHeight = 600;
+
+const playerRadius = 50;
+const smackRadius = 110;
+const ballRadius = 25;
+const netWidth = 15;
+
+const smackCooldownMilli = 500; 
+
+module.exports = { initialize, getIO, clamp, targetFPS, gamefieldWidth, gamefieldHeight, playerRadius, smackRadius, ballRadius, netWidth, smackCooldownMilli };

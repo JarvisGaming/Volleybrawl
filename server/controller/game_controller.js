@@ -47,6 +47,11 @@ const { runPhysicsCalculations, ballIsPassingThroughNet } = require("../physics.
  * 	 player2: Set<string>,
  * }} inputs
  * Each set stores all the keys the player has pressed in between server ticks.
+ * @property {{
+ * 	 player1: Number,
+ * 	 player2: Number,
+ * }} lastSmack
+ * A timestamp in milliseconds indicating the last successful smack.
  */
 
 /**
@@ -107,7 +112,11 @@ function initGameState(){
 		player1: new Set(),
 		player2: new Set(),
 	};
-	return {positions, statistics, inputs};
+	const lastSmack = {
+		player1: 0,
+		player2: 0,
+	};
+	return {positions, statistics, inputs, lastSmack};
 }
 
 /**

@@ -1,6 +1,7 @@
 const playerRadius = 50;
 const ballRadius = 25;
 const netWidth = 15;
+const smackRadius = 110;
 
 export function drawGameFrame(positions){
 	/**
@@ -30,6 +31,20 @@ export function drawGameFrame(positions){
 		}
 	}
 
+	class Player extends Circle {
+		constructor(x, y, radius, color){
+			super(x, y, radius, color);
+		}
+		draw(){
+			context.beginPath();
+			context.arc(this.x, this.y, smackRadius, 0, 2 * Math.PI);
+			context.lineWidth = 5;
+			context.stroke();
+
+			super.draw();
+		}
+	}
+
 	class Net extends Sprite {
 		constructor(x, y, width, color){
 			super(x, y);
@@ -45,10 +60,10 @@ export function drawGameFrame(positions){
 	}
 
 	// Players
-	const player1 = new Circle(positions.player1.x, positions.player1.y, playerRadius, "red");
+	const player1 = new Player(positions.player1.x, positions.player1.y, playerRadius, "red");
 	player1.draw();
 
-	const player2 = new Circle(positions.player2.x, positions.player2.y, playerRadius, "blue");
+	const player2 = new Player(positions.player2.x, positions.player2.y, playerRadius, "blue");
 	player2.draw();
 
 	// Ball
