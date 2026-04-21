@@ -37,7 +37,10 @@ io.on("connection", (socket) => {
 	socket.on("send_inputs", (inputsArray) => gameController.updatePlayerInputs(socket, new Set(inputsArray)));
 
 	// Handle disconnect across controllers (each one will check whether the player is in their player list and do the necessary clean up if so)
-	socket.on("disconnect", () => roomController.disconnectInRoom(socket));
+	socket.on("disconnect", () => {
+		roomController.disconnect(socket);
+		gameController.disconnect(socket);
+	});
 });
 
 // Use a web server to listen at port 8000

@@ -145,7 +145,7 @@ function runPhysicsCalculations(gameState){
 	// Ball always bounces off net elastically
 	if (ballIsInNet(positions.ball, positions.net)) positions.ball.dx *= -1;
 
-	console.dir(gameState.statistics, {depth: null});
+	// console.dir(gameState.statistics, {depth: null});
 }
 
 /**

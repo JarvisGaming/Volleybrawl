@@ -1,4 +1,4 @@
-const { getIO, targetFPS, playerRadius, gamefieldHeight } = require("../shared.js");
+const { getIO, targetFPS, playerRadius, gamefieldHeight, numPointsToWin } = require("../shared.js");
 const { runPhysicsCalculations, updatePositions, player1Scored, player2Scored } = require("../physics.js");
 
 /**
@@ -7,7 +7,7 @@ const { runPhysicsCalculations, updatePositions, player1Scored, player2Scored } 
  * @property {string} name
  * @property {"player1"|"player2"} playerID - Whether the player is player 1 or 2.
  * @property {string} joinedGameID - The gameID of the game the player has joined.
- * @property {boolean} ready - Whether the player has loaded the game. Meaningless if not in any game.
+ * @property {boolean} ready - Whether the player has loaded the game and is ready to start / restart. Meaningless if not in any game.
  */
 
 /**
@@ -167,6 +167,7 @@ function doTick(game){
 	sendPositionsToClients(game.gameID, game.state.positions);
 	getPlayerInputs(game.gameID);
 	processRoundEnd(game);
+	processGameEnd(game);
 }
 
 /**
@@ -209,8 +210,37 @@ function processRoundEnd(game){
 		player2Score: statistics.player2.score,
 	});
 
-	// Start another round
+	// Start another round (if the game ends afterwards the game loop will be immediately stopped again)
 	startRound(game);
+}
+
+/**
+ * @param {Game} game 
+ */
+function gameHasEnded(game){
+	const statistics = game.state.statistics;
+	return statistics.player1.score >= numPointsToWin || statistics.player2.score >= numPointsToWin;
+}
+
+/**
+ * Once a player reaches the required number of points to win, end the game and send back player statistics to clients.
+ * @param {Game} game 
+ */
+function processGameEnd(game){
+	// Game hasn't ended yet
+	if (!gameHasEnded(game)) return;
+
+	// Stop game loop
+	stopRound(game);
+
+	// Unready the players
+	for (const player of Object.values(game.players)){
+		player.ready = false;
+	}
+	
+	const statistics = game.state.statistics;
+
+	getIO().to(game.gameID).emit("game_end", statistics);
 }
 
 const eventHandlers = {
@@ -225,12 +255,12 @@ const eventHandlers = {
 		player.ready = true;
 
 		// If both players are ready, start the game
-		if (Object.values(game.players).every(player => player.ready)) {
+		if (Object.keys(game.players).length == 2 && Object.values(game.players).every(player => player.ready)) {
 			getIO().to(game.gameID).emit("start_game");
 			startRound(game);
 		}
 
-		// console.dir({ games, players }, { depth: null });
+		console.dir({ games, players }, { depth: null });
 	},
 
 	/**
@@ -245,6 +275,36 @@ const eventHandlers = {
 		game.state.inputs[playerID] = inputs;
 
 		// console.dir(game.state.inputs, { depth: null });
+	},
+
+	/**
+	 * Handle the disconnection of a player in the game screen.
+	 * @param {import("socket.io").Socket} socket 
+	 */
+	disconnect(socket){
+		// User is on a different menu
+		if (!(socket.id in players)) return;
+
+		const gameID = players[socket.id].joinedGameID;
+		const game = games[gameID];
+
+		// Remove the player from the game, and from the player variable in the controller
+		// The socket is automatically removed from the socket.io room
+		delete game.players[socket.id];
+		delete players[socket.id];
+
+		// Inform the other player
+		getIO().to(game.gameID).emit("opponent_disconnected");
+
+		// End the game loop (if any)
+		stopRound(game);
+
+		// If the game is empty, delete it
+		if (Object.keys(game.players).length == 0){
+			delete games[gameID];
+		}
+
+		console.dir({ games, players }, { depth: null });
 	}
 };
 

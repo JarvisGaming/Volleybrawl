@@ -46,5 +46,6 @@ const ballRadius = 25;
 const netWidth = 15;
 
 const smackCooldownMilli = 500; 
+const numPointsToWin = 5;
 
-module.exports = { initialize, getIO, clamp, targetFPS, gamefieldWidth, gamefieldHeight, playerRadius, smackRadius, ballRadius, netWidth, smackCooldownMilli };
+module.exports = { initialize, getIO, clamp, targetFPS, gamefieldWidth, gamefieldHeight, playerRadius, smackRadius, ballRadius, netWidth, smackCooldownMilli, numPointsToWin };

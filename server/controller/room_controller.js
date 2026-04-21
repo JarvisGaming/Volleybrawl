@@ -224,15 +224,13 @@ const eventHandlers = {
 	 * Event handler for handling the disconnection of a player who is currently in a room.
 	 * @param {import("socket.io").Socket} socket 
 	 */
-	disconnectInRoom(socket) {
+	disconnect(socket) {
+		// User is on a different menu
 		if (!(socket.id in players)) return;
 
-		const player = players[socket.id];
-		if (!player.inGame) {
-			leaveOldRoom(socket);
-			delete players[socket.id];
-			getIO().emit("update_rooms", rooms);
-		}
+		leaveOldRoom(socket);
+		delete players[socket.id];
+		getIO().emit("update_rooms", rooms);
 
 		console.dir({rooms, players}, { depth: null });
 	},

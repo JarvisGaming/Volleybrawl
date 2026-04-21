@@ -150,6 +150,12 @@ const game = (function() {
 			playerInputs.delete(e.key);
 		});
 
+		// $("#restart-game-button").addEventListener("click", () => {
+		// });
+
+		// $("#return-to-lobby-button").addEventListener("click", () => {
+		// });
+
 		// Displays messages for failed operations in the game page.
 		socket.on("game_page_error", (msg) => {
 			$("#game-message").text(msg);
@@ -178,6 +184,15 @@ const game = (function() {
 		socket.on("round_end", ({player1Score, player2Score}) => {
 			$("#player1-score").text(player1Score);
 			$("#player2-score").text(player2Score);
+		});
+
+		socket.on("game_end", (statistics) => {
+			$("#game-message").text(JSON.stringify(statistics));
+			$("#game-buttons").show();
+		});
+
+		socket.on("opponent_disconnected", () => {
+			$("#game-message").text("Opponent disconnected.");
 		});
 	};
 

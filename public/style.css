@@ -127,3 +127,8 @@ form button {
     height: calc(50vw * 0.75);
     align-self: center;
 }
+
+#game-buttons {
+    display: flex;
+    justify-content: center;
+}
