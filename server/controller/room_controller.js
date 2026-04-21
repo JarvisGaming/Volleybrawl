@@ -1,4 +1,4 @@
-const { getIO } = require("./shared.js");
+const { getIO } = require("../shared.js");
 const crypto = require("crypto");
 const gameController = require("./game_controller.js");
 const MAX_PLAYERS_PER_ROOM = 2;

@@ -4,8 +4,8 @@
 
 const { initialize } = require("./shared.js");
 
-const roomController = require("./room_controller.js").eventHandlers;
-const gameController = require("./game_controller.js").eventHandlers;
+const roomController = require("./controller/room_controller.js").eventHandlers;
+const gameController = require("./controller/game_controller.js").eventHandlers;
 
 // Create the Express app
 const express = require("express");

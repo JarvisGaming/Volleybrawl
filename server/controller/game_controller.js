@@ -1,5 +1,5 @@
-const { getIO, targetFPS, clamp, playerRadius, ballRadius, netWidth, gamefieldWidth, gamefieldHeight } = require("./shared.js");
-const { runPhysicsCalculations, ballIsPassingThroughNet } = require("./physics.js");
+const { getIO, targetFPS, clamp, playerRadius, ballRadius, netWidth, gamefieldWidth, gamefieldHeight } = require("../shared.js");
+const { runPhysicsCalculations, ballIsPassingThroughNet } = require("../physics.js");
 
 /**
  * Represents a connected client.
