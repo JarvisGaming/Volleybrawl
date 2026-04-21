@@ -1,8 +1,6 @@
 const { playerRadius, ballRadius, smackRadius, netWidth, gamefieldWidth, gamefieldHeight, smackCooldownMilli } = require("./shared.js");
 
-function distance(pos1, pos2){
-	return Math.sqrt((pos1.x - pos2.x) ** 2 + (pos1.y - pos2.y) ** 2);
-}
+function distance(pos1, pos2){ return Math.sqrt((pos1.x - pos2.x) ** 2 + (pos1.y - pos2.y) ** 2); }
 
 function isGrounded(position, radius){ return position.y + radius >= gamefieldHeight; }
 	
@@ -69,7 +67,9 @@ function runPhysicsCalculations(gameState){
 	const inputs = gameState.inputs;
 	const positions = gameState.positions;
 
-	// Update player velocities
+	/**
+	 * Update player velocities
+	 */
 	for (const playerID of ["player1", "player2"]){
 		const inputSet = inputs[playerID];
 
@@ -91,7 +91,10 @@ function runPhysicsCalculations(gameState){
 		if (!isGrounded(positions[playerID], playerRadius)) positions[playerID].dy += 1.5;
 	}
 
-	// Update ball velocities
+
+	/**
+	 * Update ball velocity.
+	 */
 	// If the ball is on / in the ground, bounce perfectly elastically
 	if (isGrounded(positions.ball, ballRadius)) positions.ball.dy *= -1;
 
@@ -109,7 +112,7 @@ function runPhysicsCalculations(gameState){
 		const playerPosition = positions[playerID];
 		const ballPosition = positions.ball;
 
-		function updateBallSmackVelocity(ballPosition, playerPosition, totalVelocity){
+		function updateBallSmackVelocity(totalVelocity){
 			// Calculate angle between player and ball
 			const angle = Math.atan2(ballPosition.y - playerPosition.y, ballPosition.x - playerPosition.x);
 
@@ -119,7 +122,7 @@ function runPhysicsCalculations(gameState){
 		}
 
 		if (isTouching(playerPosition, ballPosition)){
-			updateBallSmackVelocity(ballPosition, playerPosition, 25);
+			updateBallSmackVelocity(25);
 		}
 
 		// Player smacking off cooldown
@@ -128,12 +131,9 @@ function runPhysicsCalculations(gameState){
 			gameState.lastSmack[playerID] = Date.now();
 			
 			if (isSmackSuccessful(playerPosition, ballPosition)){
-				updateBallSmackVelocity(ballPosition, playerPosition, 40);
+				updateBallSmackVelocity(40);
 			}
 		}
-
-		if (playerID == "player1")
-			console.log({smackingInput: isSmacking(inputs[playerID]), ballIsClose: isSmackSuccessful(playerPosition, ballPosition), onCooldown: isSmackOnCooldown(gameState.lastSmack[playerID])});
 	}
 
 	// Ball always bounces off net elastically

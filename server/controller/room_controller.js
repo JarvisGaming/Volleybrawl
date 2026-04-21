@@ -1,7 +1,7 @@
 const { getIO } = require("../shared.js");
 const crypto = require("crypto");
 const gameController = require("./game_controller.js");
-const MAX_PLAYERS_PER_ROOM = 2;
+const maxPlayersPerRoom = 2;
 
 /**
  * Represents a connected client.
@@ -153,7 +153,7 @@ const eventHandlers = {
 			return;
 		}
 
-		if (Object.keys(rooms[roomID].players).length >= MAX_PLAYERS_PER_ROOM) {
+		if (Object.keys(rooms[roomID].players).length >= maxPlayersPerRoom) {
 			socket.emit("room_page_error", "The room is full already.");
 			return;
 		}
@@ -211,7 +211,7 @@ const eventHandlers = {
 
 		// Start the game if all players are ready
 		if (
-			Object.keys(room.players).length == MAX_PLAYERS_PER_ROOM &&
+			Object.keys(room.players).length == maxPlayersPerRoom &&
 			Object.values(room.players).every(player => player.ready)
 		) {
 			startGame(room);
