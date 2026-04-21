@@ -169,11 +169,10 @@ const game = (function() {
 		// Every server tick, clients receive updated position information
 		socket.on("update_positions", (updatedPositions) => {
 			positions = updatedPositions;
-			drawGameFrame();
-		});
 
-		// Every client frame, clients rerender the canvas based on the stored positions
-		drawGameFrame(positions);
+			// Clients rerender the canvas based on the stored positions
+			drawGameFrame(positions);
+		});
 	};
 
 	const init = function() {
