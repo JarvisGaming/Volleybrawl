@@ -1,9 +1,9 @@
-const { playerRadius, ballRadius, smackRadius, netWidth, gamefieldWidth, gamefieldHeight, smackCooldownMilli } = require("./shared.js");
+const { clamp, playerRadius, ballRadius, smackRadius, netWidth, gamefieldWidth, gamefieldHeight, smackCooldownMilli } = require("./shared.js");
 
 function distance(pos1, pos2){ return Math.sqrt((pos1.x - pos2.x) ** 2 + (pos1.y - pos2.y) ** 2); }
 
 function isGrounded(position, radius){ return position.y + radius >= gamefieldHeight; }
-	
+
 function isMovingLeft(inputSet){ return inputSet.has("ArrowLeft"); }
 function isMovingRight(inputSet){ return inputSet.has("ArrowRight"); }
 function isJumping(inputSet){ return inputSet.has("ArrowUp"); }
@@ -27,8 +27,8 @@ function ballIsInNet(ballPosition, netPosition){
 
 /**
  * Checks if the ball will pass through the net when it moves this tick.
- * @param {import("./game_controller.js").Position} ballPosition 
- * @param {import("./game_controller.js").Position} netPosition 
+ * @param {import("./controller/game_controller.js").Position} ballPosition 
+ * @param {import("./controller/game_controller.js").Position} netPosition 
  * @returns {Boolean}
  */
 function ballIsPassingThroughNet(ballPosition, netPosition){
@@ -55,13 +55,15 @@ function ballIsPassingThroughNet(ballPosition, netPosition){
 	else return false;
 }
 
-function isTouching(playerPosition, ballPosition){
-	return distance(playerPosition, ballPosition) < playerRadius + ballRadius;
-}
+function player1Scored(ballPosition){ return isGrounded(ballPosition, ballRadius) && ballPosition.x >= gamefieldWidth / 2; }
+function player2Scored(ballPosition){ return isGrounded(ballPosition, ballRadius) && ballPosition.x <= gamefieldWidth / 2; }
+
+function isTouching(playerPosition, ballPosition){ return distance(playerPosition, ballPosition) < playerRadius + ballRadius; }
 
 /**
  * Update the velocities of all game objects.
- * @param {import("./game_controller.js").GameState} gameState
+ * Also updated relevant player statistics.
+ * @param {import("./controller/game_controller.js").GameState} gameState
  */
 function runPhysicsCalculations(gameState){
 	const inputs = gameState.inputs;
@@ -85,7 +87,10 @@ function runPhysicsCalculations(gameState){
 		if (isGrounded(positions[playerID], playerRadius)) positions[playerID].dy = 0;
 
 		// Jumping
-		if (isJumping(inputSet) && isGrounded(positions[playerID], playerRadius)) positions[playerID].dy -= 30;
+		if (isJumping(inputSet) && isGrounded(positions[playerID], playerRadius)) {
+			positions[playerID].dy -= 30;
+			gameState.statistics[playerID].numJumps++;
+		}
 
 		// Gravity
 		if (!isGrounded(positions[playerID], playerRadius)) positions[playerID].dy += 1.5;
@@ -132,12 +137,50 @@ function runPhysicsCalculations(gameState){
 			
 			if (isSmackSuccessful(playerPosition, ballPosition)){
 				updateBallSmackVelocity(40);
+				gameState.statistics[playerID].numSmacks++;
 			}
 		}
 	}
 
 	// Ball always bounces off net elastically
 	if (ballIsInNet(positions.ball, positions.net)) positions.ball.dx *= -1;
+
+	console.dir(gameState.statistics, {depth: null});
 }
 
-module.exports = { runPhysicsCalculations, ballIsPassingThroughNet };
+/**
+ * Move the players, the net, and the ball based on velocity.
+ * @param {Positions} positions 
+ */
+function updatePositions(positions){
+	// Handle ball updates separately to prevent it from phasing through net
+	for (const gameObject of Object.keys(positions)){
+		if (gameObject == "ball") continue;
+		positions[gameObject].x += positions[gameObject].dx;
+		positions[gameObject].y += positions[gameObject].dy;
+	}
+
+	// Prevent ball from phasing through net
+	if (ballIsPassingThroughNet(positions.ball, positions.net)){
+		// Clamp to left of net
+		if (positions.ball.dx >= 0) positions.ball.x = positions.net.x - ballRadius;
+
+		// Clamp to right of net
+		else if (positions.ball.dx <= 0) positions.ball.x = positions.net.x + ballRadius;
+	}
+	else { positions.ball.x += positions.ball.dx; }
+	positions.ball.y += positions.ball.dy;
+
+	// Clamp player position to their side of the net
+	positions["player1"].y = clamp(positions["player1"].y, playerRadius, gamefieldHeight - playerRadius);
+	positions["player1"].x = clamp(positions["player1"].x, playerRadius, positions.net.x - netWidth / 2 - playerRadius);
+
+	positions["player2"].y = clamp(positions["player2"].y, playerRadius, gamefieldHeight - playerRadius);
+	positions["player2"].x = clamp(positions["player2"].x, positions.net.x + netWidth / 2 + playerRadius, gamefieldWidth - playerRadius);
+
+	// Clamp ball position
+	positions.ball.y = clamp(positions.ball.y, ballRadius, gamefieldHeight - ballRadius);
+	positions.ball.x = clamp(positions.ball.x, 0 + ballRadius, gamefieldWidth - ballRadius);
+}
+
+module.exports = { runPhysicsCalculations, updatePositions, ballIsPassingThroughNet, player1Scored, player2Scored };

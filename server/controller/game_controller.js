@@ -1,5 +1,5 @@
-const { getIO, targetFPS, clamp, playerRadius, ballRadius, netWidth, gamefieldWidth, gamefieldHeight } = require("../shared.js");
-const { runPhysicsCalculations, ballIsPassingThroughNet } = require("../physics.js");
+const { getIO, targetFPS } = require("../shared.js");
+const { runPhysicsCalculations, updatePositions, player1Scored, player2Scored } = require("../physics.js");
 
 /**
  * Represents a connected client.
@@ -155,41 +155,7 @@ function doTick(game){
 	updatePositions(game.state.positions);
 	sendPositionsToClients(game.gameID, game.state.positions);
 	getPlayerInputs(game.gameID);
-}
-
-/**
- * Move the players, the net, and the ball based on velocity.
- * @param {Positions} positions 
- */
-function updatePositions(positions){
-	// Handle ball updates separately to prevent it from phasing through net
-	for (const gameObject of Object.keys(positions)){
-		if (gameObject == "ball") continue;
-		positions[gameObject].x += positions[gameObject].dx;
-		positions[gameObject].y += positions[gameObject].dy;
-	}
-
-	// Prevent ball from phasing through net
-	if (ballIsPassingThroughNet(positions.ball, positions.net)){
-		// Clamp to left of net
-		if (positions.ball.dx >= 0) positions.ball.x = positions.net.x - ballRadius;
-
-		// Clamp to right of net
-		else if (positions.ball.dx <= 0) positions.ball.x = positions.net.x + ballRadius;
-	}
-	else { positions.ball.x += positions.ball.dx; }
-	positions.ball.y += positions.ball.dy;
-
-	// Clamp player position to their side of the net
-	positions["player1"].y = clamp(positions["player1"].y, playerRadius, gamefieldHeight - playerRadius);
-	positions["player1"].x = clamp(positions["player1"].x, playerRadius, positions.net.x - netWidth / 2 - playerRadius);
-
-	positions["player2"].y = clamp(positions["player2"].y, playerRadius, gamefieldHeight - playerRadius);
-	positions["player2"].x = clamp(positions["player2"].x, positions.net.x + netWidth / 2 + playerRadius, gamefieldWidth - playerRadius);
-
-	// Clamp ball position
-	positions.ball.y = clamp(positions.ball.y, ballRadius, gamefieldHeight - ballRadius);
-	positions.ball.x = clamp(positions.ball.x, 0 + ballRadius, gamefieldWidth - ballRadius);
+	processRoundEnd(game);
 }
 
 /**
@@ -207,6 +173,23 @@ function sendPositionsToClients(gameID, positions){
  */
 function getPlayerInputs(gameID){
 	getIO().to(gameID).emit("collect_inputs");
+}
+
+/**
+ * If the ball has hit the ground, award a point to the scoring player and start a new round.
+ * @param {Game} game 
+ */
+function processRoundEnd(game){
+	if (player1Scored(game.state.positions.ball)) game.state.statistics.player1.score++;
+	if (player2Scored(game.state.positions.ball)) game.state.statistics.player2.score++;
+	getIO().to(game.gameID).emit("round_end", {
+		player1Score: game.state.statistics.player1.score,
+		player2Score: game.state.statistics.player2.score,
+	});
+
+	// Stop game loop
+	// Send round end event
+	// Start another round
 }
 
 const eventHandlers = {

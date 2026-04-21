@@ -156,8 +156,8 @@ const game = (function() {
 		});
 
 		socket.on("start_game", () => {
-			// For now we just display a message, but you can replace this with actual game logic
-			$("#game-message").text("The game has started!");
+			$("#player1-score").text(0);
+			$("#player2-score").text(0);
 		});
 
 		// Send inputs to the server
@@ -172,6 +172,12 @@ const game = (function() {
 
 			// Clients rerender the canvas based on the stored positions
 			drawGameFrame(positions);
+		});
+
+		// Some player scored
+		socket.on("round_end", ({player1Score, player2Score}) => {
+			$("#player1-score").text(player1Score);
+			$("#player2-score").text(player2Score);
 		});
 	};
 
