@@ -1,4 +1,4 @@
-const { getIO, targetFPS } = require("../shared.js");
+const { getIO, targetFPS, playerRadius, gamefieldHeight } = require("../shared.js");
 const { runPhysicsCalculations, updatePositions, player1Scored, player2Scored } = require("../physics.js");
 
 /**
@@ -60,6 +60,7 @@ const { runPhysicsCalculations, updatePositions, player1Scored, player2Scored } 
  * @property {string} gameID
  * @property {Object.<string, GamePlayer>} players
  * @property {GameState} state
+ * @property {NodeJS.Timeout} gameLoopIntervalID
  */
 
 /**
@@ -76,6 +77,12 @@ const games = {};
  */
 const players = {};
 
+const initialPositions = {
+	player1: {x: 100, y: gamefieldHeight - playerRadius, dx: 0, dy: 0},
+	player2: {x: 700, y: gamefieldHeight - playerRadius, dx: 0, dy: 0},
+	ball: {x: 100, y: 100, dx: 0, dy: 0},
+	net: {x: 400, y: 350, dx: 0, dy: 0.1},
+};
 
 /**
  * Factory function to create a GamePlayer object.
@@ -98,12 +105,7 @@ function createGamePlayer(name, ithPlayer, gameID) {
  * @returns {GameState}
  */
 function initGameState(){
-	const positions = {
-		player1: {x: 100, y: 100, dx: 0, dy: 0},
-		player2: {x: 700, y: 100, dx: 0, dy: 0},
-		ball: {x: 200, y: 100, dx: 20, dy: 0},
-		net: {x: 400, y: 350, dx: 0, dy: 0},
-	};
+	const positions = structuredClone(initialPositions);  // Deep copy the object
 	const statistics = {
 		player1: {score: 0, numJumps: 0, numSmacks: 0},
 		player2: {score: 0, numJumps: 0, numSmacks: 0},
@@ -126,7 +128,7 @@ function initGameState(){
 function createGame(room) {
 	// Reuse roomID as gameID
 	const gameID = room.roomID;
-	games[gameID] = { gameID, players: {}, state: initGameState() };
+	games[gameID] = { gameID, players: {}, state: initGameState(), gameLoop: null };
 
 	// Update player list in controller and game
 	for (const [socketID, player] of Object.entries(room.players)) {
@@ -141,8 +143,17 @@ function createGame(room) {
  * Start the game loop.
  * @param {Game} game 
  */
-function runGame(game){
-	setInterval(doTick, 1000 / targetFPS, game);
+function startRound(game){
+	game.state.positions = structuredClone(initialPositions);  // Deep copy the object
+	game.gameLoopIntervalID = setInterval(doTick, 1000 / targetFPS, game);
+}
+
+/**
+ * Stop the game loop.
+ * @param {Game} game 
+ */
+function stopRound(game){
+	clearInterval(game.gameLoopIntervalID);
 }
 
 /**
@@ -180,16 +191,26 @@ function getPlayerInputs(gameID){
  * @param {Game} game 
  */
 function processRoundEnd(game){
-	if (player1Scored(game.state.positions.ball)) game.state.statistics.player1.score++;
-	if (player2Scored(game.state.positions.ball)) game.state.statistics.player2.score++;
+	const positions = game.state.positions;
+	const statistics = game.state.statistics;
+
+	// Ball hasn't hit the ground yet
+	if (!player1Scored(positions.ball) && !player2Scored(positions.ball)) return;
+
+	if (player1Scored(positions.ball)) statistics.player1.score++;
+	if (player2Scored(positions.ball)) statistics.player2.score++;
+	
+	// Stop game loop
+	stopRound(game);
+
+	// Send round end event
 	getIO().to(game.gameID).emit("round_end", {
-		player1Score: game.state.statistics.player1.score,
-		player2Score: game.state.statistics.player2.score,
+		player1Score: statistics.player1.score,
+		player2Score: statistics.player2.score,
 	});
 
-	// Stop game loop
-	// Send round end event
 	// Start another round
+	startRound(game);
 }
 
 const eventHandlers = {
@@ -206,10 +227,10 @@ const eventHandlers = {
 		// If both players are ready, start the game
 		if (Object.values(game.players).every(player => player.ready)) {
 			getIO().to(game.gameID).emit("start_game");
-			runGame(game);
+			startRound(game);
 		}
 
-		console.dir({ games, players }, { depth: null });
+		// console.dir({ games, players }, { depth: null });
 	},
 
 	/**
