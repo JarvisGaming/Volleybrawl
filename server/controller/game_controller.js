@@ -131,9 +131,12 @@ function createGame(room) {
 	games[gameID] = { gameID, players: {}, state: initGameState(), gameLoopIntervalID: null };
 
 	// Update player list in controller and game
+	let playerIndex = 1;
 	for (const [socketID, player] of Object.entries(room.players)) {
-		players[socketID] = createGamePlayer(player.name, Object.keys(players).length + 1, gameID);
+		players[socketID] = createGamePlayer(player.name, playerIndex, gameID);
 		games[gameID].players[socketID] = players[socketID];
+
+		playerIndex++;
 	}
 
 	// console.dir({ games, players }, { depth: null });
