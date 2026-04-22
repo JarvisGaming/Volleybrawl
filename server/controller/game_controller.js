@@ -1,4 +1,4 @@
-const { getIO, targetFPS, playerRadius, gamefieldHeight, numPointsToWin } = require("../shared.js");
+const { getIO, allPlayersAreReady, TARGET_FPS, PLAYER_RADIUS, GAMEFIELD_HEIGHT, NUM_POINTS_TO_WIN } = require("../shared.js");
 const { runPhysicsCalculations, updatePositions, player1Scored, player2Scored } = require("../physics.js");
 
 /**
@@ -78,8 +78,8 @@ const games = {};
 const players = {};
 
 const initialPositions = {
-	player1: {x: 100, y: gamefieldHeight - playerRadius, dx: 0, dy: 0},
-	player2: {x: 700, y: gamefieldHeight - playerRadius, dx: 0, dy: 0},
+	player1: {x: 100, y: GAMEFIELD_HEIGHT - PLAYER_RADIUS, dx: 0, dy: 0},
+	player2: {x: 700, y: GAMEFIELD_HEIGHT - PLAYER_RADIUS, dx: 0, dy: 0},
 	ball: {x: 100, y: 100, dx: 0, dy: 0},
 	net: {x: 400, y: 350, dx: 0, dy: 0.1},
 };
@@ -156,7 +156,7 @@ function handlePlayerReady(socket, resetState){
 	player.ready = true;
 
 	// If both players are ready, start the game
-	if (Object.keys(game.players).length == 2 && Object.values(game.players).every(player => player.ready)) {
+	if (allPlayersAreReady(game.players)) {
 
 		// Reset game to default state
 		if (resetState === true){
@@ -177,7 +177,7 @@ function handlePlayerReady(socket, resetState){
  */
 function startRound(game){
 	game.state.positions = structuredClone(initialPositions);  // Deep copy the object
-	game.gameLoopIntervalID = setInterval(doTick, 1000 / targetFPS, game);
+	game.gameLoopIntervalID = setInterval(doTick, 1000 / TARGET_FPS, game);
 }
 
 /**
@@ -251,7 +251,7 @@ function processRoundEnd(game){
  */
 function gameHasEnded(game){
 	const statistics = game.state.statistics;
-	return statistics.player1.score >= numPointsToWin || statistics.player2.score >= numPointsToWin;
+	return statistics.player1.score >= NUM_POINTS_TO_WIN || statistics.player2.score >= NUM_POINTS_TO_WIN;
 }
 
 /**

@@ -37,8 +37,7 @@ io.on("connection", (socket) => {
 	socket.on("send_inputs", (inputsArray) => gameController.updatePlayerInputs(socket, new Set(inputsArray)));
 	socket.on("restart_ready", () => gameController.playerReadyToRestart(socket));
 
-	// Transition between controller pages
-	// Each controller should do its own thing
+	// roomController doesn't call gameController directly, to prevent circular dependency
 	socket.on("return_to_room_listing", (playerName) => {
 		gameController.exitGamePage(socket);
 		roomController.enterRoomListingPage(socket, playerName);

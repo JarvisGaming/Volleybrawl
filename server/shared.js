@@ -35,17 +35,25 @@ function clamp(number, lowerBound, upperBound){
 	return Math.min(Math.max(number, lowerBound), upperBound);
 }
 
-const targetFPS = 60;
+/**
+ * Check if all players in a room / game are ready.
+ * @property {Object.<string, any>} playersObject
+ */
+function allPlayersAreReady(playersObject){
+	return Object.keys(playersObject).length == 2 && Object.values(playersObject).every(player => player.ready);
+}
 
-const gamefieldWidth = 800;
-const gamefieldHeight = 600;
+const TARGET_FPS = 60;
 
-const playerRadius = 50;
-const smackRadius = 110;
-const ballRadius = 25;
-const netWidth = 15;
+const GAMEFIELD_WIDTH = 800;
+const GAMEFIELD_HEIGHT = 600;
 
-const smackCooldownMilli = 500; 
-const numPointsToWin = 5;
+const PLAYER_RADIUS = 50;
+const SMACK_RADIUS = 110;
+const BALL_RADIUS = 25;
+const NET_WIDTH = 15;
 
-module.exports = { initialize, getIO, clamp, targetFPS, gamefieldWidth, gamefieldHeight, playerRadius, smackRadius, ballRadius, netWidth, smackCooldownMilli, numPointsToWin };
+const SMACK_COOLDOWN_MILLI = 500; 
+const NUM_POINTS_TO_WIN = 5;
+
+module.exports = { initialize, getIO, clamp, allPlayersAreReady, TARGET_FPS, GAMEFIELD_WIDTH, GAMEFIELD_HEIGHT, PLAYER_RADIUS, SMACK_RADIUS, BALL_RADIUS, NET_WIDTH, SMACK_COOLDOWN_MILLI, NUM_POINTS_TO_WIN };

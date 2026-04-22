@@ -141,7 +141,7 @@ const game = (function() {
 			});
 
 			// Show the game page
-			socket.on("load_game", () => {
+			socket.on("enter_game_page", () => {
 				$("#room-listing-page").hide();
 				$("#game-page").show();
 				initGamePage();
@@ -182,7 +182,7 @@ const game = (function() {
 			});
 			
 			$("#return-to-lobby-button").on("click", function() {
-				// This should be modified to grab the username from browser (?) storage instead
+				// This should be modified to grab the username from e.g. sessionStorage instead
 				let playerName = $("#join-name").val().trim();
 				socket.emit("return_to_room_listing", playerName);
 

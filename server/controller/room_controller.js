@@ -1,4 +1,4 @@
-const { getIO } = require("../shared.js");
+const { getIO, allPlayersAreReady } = require("../shared.js");
 const crypto = require("crypto");
 const gameController = require("./game_controller.js");
 const maxPlayersPerRoom = 2;
@@ -97,7 +97,7 @@ function startGame(room) {
 	gameController.createGame(room);
 
 	// Make clients load game page
-	getIO().to(room.roomID).emit("load_game");
+	getIO().to(room.roomID).emit("enter_game_page");
 
 	// Delete the room
 	delete rooms[room.roomID];
@@ -210,10 +210,7 @@ const eventHandlers = {
 		socket.emit("room_page_success", "You are " + (room.players[socket.id].ready ? "ready" : "not ready") + ".");
 
 		// Start the game if all players are ready
-		if (
-			Object.keys(room.players).length == maxPlayersPerRoom &&
-			Object.values(room.players).every(player => player.ready)
-		) {
+		if (allPlayersAreReady(room.players)) {
 			startGame(room);
 		}
 
