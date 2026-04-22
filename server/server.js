@@ -39,6 +39,10 @@ io.on("connection", (socket) => {
 
 	// Transition between controller pages
 	// Each controller should do its own thing
+	socket.on("return_to_room_listing", (playerName) => {
+		gameController.exitGamePage(socket);
+		roomController.enterRoomListingPage(socket, playerName);
+	});
 
 	// Handle disconnect across controllers (each one will check whether the player is in their player list and do the necessary clean up if so)
 	socket.on("disconnect", () => {

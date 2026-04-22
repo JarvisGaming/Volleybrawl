@@ -136,7 +136,7 @@ function createGame(room) {
 		games[gameID].players[socketID] = players[socketID];
 	}
 
-	console.dir({ games, players }, { depth: null });
+	// console.dir({ games, players }, { depth: null });
 };
 
 /**
@@ -165,7 +165,7 @@ function handlePlayerReady(socket, resetState){
 		startRound(game);
 	}
 
-	console.dir({ games, players }, { depth: null });
+	// console.dir({ games, players }, { depth: null });
 }
 
 /**
@@ -271,7 +271,35 @@ function processGameEnd(game){
 
 	getIO().to(game.gameID).emit("game_end", statistics);
 
-	console.dir({ games, players }, { depth: null });
+	// console.dir({ games, players }, { depth: null });
+}
+
+/**
+ * Handles player disconnection / leaving the game room.
+ * @param {import("socket.io").Socket} socket 
+ * @param {Game} game 
+ */
+function leaveGame(socket){
+	const gameID = players[socket.id].joinedGameID;
+	const game = games[gameID];
+
+	// Remove the player from the game, the socket room, and from the player variable in the controller
+	delete game.players[socket.id];
+	delete players[socket.id];
+	socket.leave(gameID);
+
+	// Inform the other player
+	getIO().to(game.gameID).emit("opponent_disconnected");
+
+	// End the game loop (if any)
+	stopRound(game);
+
+	// If the game is empty, delete it
+	if (Object.keys(game.players).length == 0){
+		delete games[gameID];
+	}
+
+	// console.dir({ games, players }, { depth: null });
 }
 
 const eventHandlers = {
@@ -295,7 +323,7 @@ const eventHandlers = {
 		const game = games[player.joinedGameID];
 		game.state.inputs[playerID] = inputs;
 
-		console.dir(game.state.inputs, { depth: null });
+		// console.dir(game.state.inputs, { depth: null });
 	},
 
 	/**
@@ -308,34 +336,42 @@ const eventHandlers = {
 	},
 
 	/**
+	 * Handle a player pressing the return to lobby button at the end of a game.
+	 * @param {import("socket.io").Socket} socket 
+	 */
+	exitGamePage(socket){
+		leaveGame(socket);
+	},
+
+	/**
 	 * Handle the disconnection of a player in the game screen.
 	 * @param {import("socket.io").Socket} socket 
 	 */
 	disconnect(socket){
 		// User is on a different menu
 		if (!(socket.id in players)) return;
+		leaveGame(socket);
 
-		const gameID = players[socket.id].joinedGameID;
-		const game = games[gameID];
+		// const gameID = players[socket.id].joinedGameID;
+		// const game = games[gameID];
 
-		// Remove the player from the game, and from the player variable in the controller
-		// The socket is automatically removed from the socket.io room
-		// But if the player e.g. returns to lobby, he will need to be manually removed from room
-		delete game.players[socket.id];
-		delete players[socket.id];
+		// // Remove the player from the game, the socket room, and from the player variable in the controller
+		// delete game.players[socket.id];
+		// delete players[socket.id];
+		// socket.leave(gameID)
 
-		// Inform the other player
-		getIO().to(game.gameID).emit("opponent_disconnected");
+		// // Inform the other player
+		// getIO().to(game.gameID).emit("opponent_disconnected");
 
-		// End the game loop (if any)
-		stopRound(game);
+		// // End the game loop (if any)
+		// stopRound(game);
 
-		// If the game is empty, delete it
-		if (Object.keys(game.players).length == 0){
-			delete games[gameID];
-		}
+		// // If the game is empty, delete it
+		// if (Object.keys(game.players).length == 0){
+		// 	delete games[gameID];
+		// }
 
-		console.dir({ games, players }, { depth: null });
+		// console.dir({ games, players }, { depth: null });
 	}
 };
 

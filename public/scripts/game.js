@@ -3,6 +3,11 @@ import {drawGameFrame} from "./renderer.js";
 const game = (function() {
 	const socket = io();
 
+	// These exist to prevent double adding of socket event listeners (socket.on(...))'
+	// This problem only exists for pages that you can exit and re-enter multiple times
+	let hasEnteredRoomListingBefore = false;
+	let hasEnteredGameBefore = false;
+
 	const initConnectPage = function() {
 		// Show the connection error to Socket.IO
 		socket.on("connect_error", (error) => {
@@ -41,11 +46,6 @@ const game = (function() {
 			// Send the WebSocket message to the server
 			socket.emit("enter_room_listing_page", playerName);
 		});
-
-		// Server currently doesn't throw "enter_room_listing_page_error"
-		// socket.on("enter_room_listing_page_error", (error) => {
-		// 	$("#join-message").text(error);
-		// });
 
 		// The player joins the game successfully
 		socket.on("enter_room_listing_page_success", () => {
@@ -91,58 +91,63 @@ const game = (function() {
 			});
 		}
 
-		// Update the room listing with the latest information from the server
-		socket.on("update_rooms", (rooms) => {
-			// Empty out listing
-			$("#room-listing").empty();
+		// Only add socket event listeners if they haven't been added yet
+		if (!hasEnteredRoomListingBefore){
+			hasEnteredRoomListingBefore = true;
 
-			// Re-populate room listing with up-to-date information
-			for (const room of Object.values(rooms)) {
-				// Clone template element
-				const roomElement = $($("#room-template").html());
+			// Update the room listing with the latest information from the server
+			socket.on("update_rooms", (rooms) => {
+				// Empty out listing
+				$("#room-listing").empty();
 
-				// Add back roomID information
-				roomElement.attr("data-roomid", room.roomID);
-				roomElement.find(".join-room-button").attr("data-roomid", room.roomID);
-				roomElement.find(".leave-room-button").attr("data-roomid", room.roomID);
-				roomElement.find(".ready-button").attr("data-roomid", room.roomID);
+				// Re-populate room listing with up-to-date information
+				for (const room of Object.values(rooms)) {
+					// Clone template element
+					const roomElement = $($("#room-template").html());
 
-				// Set player names and their ready statues
-				const players = Object.values(room.players);
+					// Add back roomID information
+					roomElement.attr("data-roomid", room.roomID);
+					roomElement.find(".join-room-button").attr("data-roomid", room.roomID);
+					roomElement.find(".leave-room-button").attr("data-roomid", room.roomID);
+					roomElement.find(".ready-button").attr("data-roomid", room.roomID);
 
-				if (players.at(0) != undefined) {
-					roomElement.find(".player1-name").text(players.at(0).name);
-					if (players.at(0).ready) roomElement.find(".player1-name").addClass("ready");
+					// Set player names and their ready statues
+					const players = Object.values(room.players);
+
+					if (players.at(0) != undefined) {
+						roomElement.find(".player1-name").text(players.at(0).name);
+						if (players.at(0).ready) roomElement.find(".player1-name").addClass("ready");
+					}
+					if (players.at(1) != undefined) {
+						roomElement.find(".player2-name").text(players.at(1).name);
+						if (players.at(1).ready) roomElement.find(".player2-name").addClass("ready");
+					}
+
+					$("#room-listing").append(roomElement);
 				}
-				if (players.at(1) != undefined) {
-					roomElement.find(".player2-name").text(players.at(1).name);
-					if (players.at(1).ready) roomElement.find(".player2-name").addClass("ready");
-				}
 
-				$("#room-listing").append(roomElement);
-			}
+				// Re-attach event handlers to the new buttons
+				setRoomButtons();
+			});
 
-			// Re-attach event handlers to the new buttons
-			setRoomButtons();
-		});
+			// Displays messages for successful operations in the room listing page.
+			socket.on("room_page_success", (msg) => {
+				$("#room-message").text(msg);
+			});
 
-		// Displays messages for successful operations in the room listing page.
-		socket.on("room_page_success", (msg) => {
-			$("#room-message").text(msg);
-		});
+			// Displays messages for failed operations in the room listing page.
+			socket.on("room_page_error", (msg) => {
+				$("#room-message").text(msg);
+			});
 
-		// Displays messages for failed operations in the room listing page.
-		socket.on("room_page_error", (msg) => {
-			$("#room-message").text(msg);
-		});
-
-		socket.on("load_game", () => {
 			// Show the game page
-			$("#room-listing-page").hide();
-			$("#game-page").show();
-			initGamePage();
-			socket.emit("game_loaded");
-		});
+			socket.on("load_game", () => {
+				$("#room-listing-page").hide();
+				$("#game-page").show();
+				initGamePage();
+				socket.emit("game_loaded");
+			});
+		}
 	};
 
 	const initGamePage = function() {
@@ -176,54 +181,62 @@ const game = (function() {
 				$("#game-message").text("Waiting for opponent to restart...");
 			});
 			
-			// $("#return-to-lobby-button").on("click", function() {
-			// 	let playerName = $("#join-name").val().trim();
-			// 	socket.emit("return_to_room_listing", playerName);
+			$("#return-to-lobby-button").on("click", function() {
+				// This should be modified to grab the username from browser (?) storage instead
+				let playerName = $("#join-name").val().trim();
+				socket.emit("return_to_room_listing", playerName);
 
-			// 	$("#game-page").hide();
-			// });
+				$("#game-page").hide();
+				$("#room-listing-page").show();
+				initRoomListingPage();
+			});
 		}
 
-		// Displays messages for failed operations in the game page.
-		socket.on("game_page_error", (msg) => {
-			$("#game-message").text(msg);
-		});
+		// Only add socket event listeners if they haven't been added yet
+		if (!hasEnteredGameBefore){
+			hasEnteredGameBefore = true;
 
-		socket.on("start_game", () => {
-			hideMessageAndButtons();
-			setEventListeners();
-			$("#player1-score").text(0);
-			$("#player2-score").text(0);
-		});
+			// Displays messages for failed operations in the game page.
+			socket.on("game_page_error", (msg) => {
+				$("#game-message").text(msg);
+			});
 
-		// Send inputs to the server
-		socket.on("collect_inputs", () => {
-			// Set<string> is not serializable, need to convert to array first before casting it back on the server side
-			socket.emit("send_inputs", [...playerInputs]);
-		});
+			socket.on("start_game", () => {
+				hideMessageAndButtons();
+				setEventListeners();
+				$("#player1-score").text(0);
+				$("#player2-score").text(0);
+			});
 
-		// Every server tick, clients receive updated position information
-		socket.on("update_positions", (updatedPositions) => {
-			positions = updatedPositions;
+			// Send inputs to the server
+			socket.on("collect_inputs", () => {
+				// Set<string> is not serializable, need to convert to array first before casting it back on the server side
+				socket.emit("send_inputs", [...playerInputs]);
+			});
 
-			// Clients rerender the canvas based on the stored positions
-			drawGameFrame(positions);
-		});
+			// Every server tick, clients receive updated position information
+			socket.on("update_positions", (updatedPositions) => {
+				positions = updatedPositions;
 
-		// Some player scored
-		socket.on("round_end", ({player1Score, player2Score}) => {
-			$("#player1-score").text(player1Score);
-			$("#player2-score").text(player2Score);
-		});
+				// Clients rerender the canvas based on the stored positions
+				drawGameFrame(positions);
+			});
 
-		socket.on("game_end", (statistics) => {
-			$("#game-message").text(JSON.stringify(statistics));
-			$("#game-buttons").show();
-		});
+			// Some player scored
+			socket.on("round_end", ({player1Score, player2Score}) => {
+				$("#player1-score").text(player1Score);
+				$("#player2-score").text(player2Score);
+			});
 
-		socket.on("opponent_disconnected", () => {
-			$("#game-message").text("Opponent disconnected.");
-		});
+			socket.on("game_end", (statistics) => {
+				$("#game-message").text(JSON.stringify(statistics));
+				$("#game-buttons").show();
+			});
+
+			socket.on("opponent_disconnected", () => {
+				$("#game-message").text("Opponent disconnected.");
+			});
+		}
 	};
 
 	const init = function() {
