@@ -354,27 +354,6 @@ const eventHandlers = {
 		// User is on a different menu
 		if (!(socket.id in players)) return;
 		leaveGame(socket);
-
-		// const gameID = players[socket.id].joinedGameID;
-		// const game = games[gameID];
-
-		// // Remove the player from the game, the socket room, and from the player variable in the controller
-		// delete game.players[socket.id];
-		// delete players[socket.id];
-		// socket.leave(gameID)
-
-		// // Inform the other player
-		// getIO().to(game.gameID).emit("opponent_disconnected");
-
-		// // End the game loop (if any)
-		// stopRound(game);
-
-		// // If the game is empty, delete it
-		// if (Object.keys(game.players).length == 0){
-		// 	delete games[gameID];
-		// }
-
-		// console.dir({ games, players }, { depth: null });
 	}
 };
 

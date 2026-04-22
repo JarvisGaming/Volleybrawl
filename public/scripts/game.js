@@ -235,6 +235,7 @@ const game = (function() {
 
 			socket.on("opponent_disconnected", () => {
 				$("#game-message").text("Opponent disconnected.");
+				$("#game-buttons").show();
 			});
 		}
 	};
