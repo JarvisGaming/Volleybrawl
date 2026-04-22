@@ -5,8 +5,8 @@ const game = (function() {
 
 	// These exist to prevent double adding of socket event listeners (socket.on(...))'
 	// This problem only exists for pages that you can exit and re-enter multiple times
-	let hasEnteredRoomListingBefore = false;
-	let hasEnteredGameBefore = false;
+	let hasEnteredRoomListingPageBefore = false;
+	let hasEnteredGamePageBefore = false;
 
 	const initConnectPage = function() {
 		// Show the connection error to Socket.IO
@@ -92,8 +92,8 @@ const game = (function() {
 		}
 
 		// Only add socket event listeners if they haven't been added yet
-		if (!hasEnteredRoomListingBefore){
-			hasEnteredRoomListingBefore = true;
+		if (!hasEnteredRoomListingPageBefore){
+			hasEnteredRoomListingPageBefore = true;
 
 			// Update the room listing with the latest information from the server
 			socket.on("update_rooms", (rooms) => {
@@ -193,8 +193,8 @@ const game = (function() {
 		}
 
 		// Only add socket event listeners if they haven't been added yet
-		if (!hasEnteredGameBefore){
-			hasEnteredGameBefore = true;
+		if (!hasEnteredGamePageBefore){
+			hasEnteredGamePageBefore = true;
 
 			// Displays messages for failed operations in the game page.
 			socket.on("game_page_error", (msg) => {
