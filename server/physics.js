@@ -84,8 +84,6 @@ function runPhysicsCalculations(gameState){
 
 	// Update ball velocity
 	updateBallPhysics(inputs, positions, gameState);
-
-	// console.dir(gameState.statistics, {depth: null});
 }
 
 /**

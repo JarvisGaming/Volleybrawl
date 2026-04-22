@@ -119,8 +119,6 @@ const eventHandlers = {
 		players[socket.id] = createRoomPlayer(playerName);
 		socket.emit("enter_room_listing_page_success");
 		socket.emit("update_rooms", rooms);
-
-		// console.dir({rooms, players}, { depth: null });
 	},
 
 	/**
@@ -136,8 +134,6 @@ const eventHandlers = {
 
 		socket.emit("room_page_success", "Successfully created a new room.");
 		getIO().emit("update_rooms", rooms);
-
-		// console.dir({rooms, players}, { depth: null });
 	},
 
 	/**
@@ -163,8 +159,6 @@ const eventHandlers = {
 
 		socket.emit("room_page_success", "Successfully joined the room.");
 		getIO().emit("update_rooms", rooms);
-
-		// console.dir({rooms, players}, { depth: null });
 	},
 
 	/**
@@ -184,8 +178,6 @@ const eventHandlers = {
 
 		socket.emit("room_page_success", "Successfully left the room.");
 		getIO().emit("update_rooms", rooms);
-
-		// console.dir({rooms, players}, { depth: null });
 	},
 
 	/**
@@ -213,8 +205,6 @@ const eventHandlers = {
 		if (allPlayersAreReady(room.players)) {
 			startGame(room);
 		}
-
-		// console.dir({rooms, players}, { depth: null });
 	},
 
 	/**
@@ -228,8 +218,6 @@ const eventHandlers = {
 		leaveOldRoom(socket);
 		delete players[socket.id];
 		getIO().emit("update_rooms", rooms);
-
-		// console.dir({rooms, players}, { depth: null });
 	},
 };
 

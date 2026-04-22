@@ -138,8 +138,6 @@ function createGame(room) {
 
 		playerIndex++;
 	}
-
-	// console.dir({ games, players }, { depth: null });
 };
 
 /**
@@ -167,8 +165,6 @@ function handlePlayerReady(socket, resetState){
 		getIO().to(game.gameID).emit("start_game");
 		startRound(game);
 	}
-
-	// console.dir({ games, players }, { depth: null });
 }
 
 /**
@@ -273,8 +269,6 @@ function processGameEnd(game){
 	const statistics = game.state.statistics;
 
 	getIO().to(game.gameID).emit("game_end", statistics);
-
-	// console.dir({ games, players }, { depth: null });
 }
 
 /**
@@ -301,8 +295,6 @@ function leaveGame(socket){
 	if (Object.keys(game.players).length == 0){
 		delete games[gameID];
 	}
-
-	// console.dir({ games, players }, { depth: null });
 }
 
 const eventHandlers = {
@@ -325,8 +317,6 @@ const eventHandlers = {
 		const playerID = player.playerID;
 		const game = games[player.joinedGameID];
 		game.state.inputs[playerID] = inputs;
-
-		// console.dir(game.state.inputs, { depth: null });
 	},
 
 	/**
