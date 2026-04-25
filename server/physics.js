@@ -35,8 +35,8 @@ function ballIsInNet(ballPosition, netPosition){
 
 /**
  * Checks if the ball will pass through the net when it moves this tick.
- * @param {import("./controller/game_controller.js").Position} ballPosition 
- * @param {import("./controller/game_controller.js").Position} netPosition 
+ * @param {import("./controllers/game_controller.js").Position} ballPosition 
+ * @param {import("./controllers/game_controller.js").Position} netPosition 
  * @returns {Boolean}
  */
 function ballIsPassingThroughNet(ballPosition, netPosition){
@@ -73,7 +73,7 @@ function isTouching(playerPosition, ballPosition){ return distance(playerPositio
 /**
  * Update the velocities of all game objects.
  * Also updated relevant player statistics.
- * @param {import("./controller/game_controller.js").GameState} gameState
+ * @param {import("./controllers/game_controller.js").GameState} gameState
  */
 function runPhysicsCalculations(gameState){
 	const inputs = gameState.inputs;
