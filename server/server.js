@@ -6,13 +6,53 @@ const { initialize } = require("./shared.js");
 
 const roomController = require("./controllers/room_controller.js").eventHandlers;
 const gameController = require("./controllers/game_controller.js").eventHandlers;
+const authController = require("./controllers/auth_controller.js");
+const path = require("path");
 
 // Create the Express app
 const express = require("express");
 const app = express();
 
+// EJS views (server-rendered pages)
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
+
+// Parse JSON bodies (auth endpoints)
+app.use(express.json());
+
+// Sessions (shared with Socket.IO)
+const session = require("express-session");
+const gameSession = session({
+	secret: "game",
+	resave: false,
+	saveUninitialized: false,
+	rolling: true,
+	cookie: { maxAge: 300000 },
+});
+app.use(gameSession);
+
+// Auth endpoints
+app.post("/register", authController.register);
+app.post("/signin", authController.signin);
+app.get("/validate", authController.validate);
+app.get("/signout", authController.signout);
+
+// Pages
+app.get("/", (req, res) => {
+	res.render("home_auth_view", { user: req.session.user ?? null });
+});
+
+app.get("/play", (req, res) => {
+	if (!req.session.user) {
+		res.redirect("/");
+		return;
+	}
+	res.render("play_view", { user: req.session.user });
+});
+
 // Use the 'public' folder to serve static files
-app.use(express.static("public"));
+// Keep this AFTER page routes so "/" never serves public/index.html.
+app.use(express.static("public", { index: false }));
 
 // Create the Socket.IO server
 const { createServer } = require("http");
@@ -22,6 +62,11 @@ const io = new Server(httpServer);
 
 // Initialize the shared io instance, so we don't have to pass it explictly into controller functions
 initialize(io);
+
+// Share Express session with Socket.IO
+io.use((socket, next) => {
+	gameSession(socket.request, {}, next);
+});
 
 // Handle the web socket connection
 io.on("connection", (socket) => {

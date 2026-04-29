@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Volleybrawl</title>
+  <link href="/reset.css" rel="stylesheet">
+  <link href="/style.css" rel="stylesheet">
+  <script src="/scripts/jquery.min.js"></script>
+  <script src="/scripts/auth.js" defer></script>
+</head>
+<body data-bootstrap-user="<%- encodeURIComponent(JSON.stringify(user)) %>">
+  <div id="home-page" class="col">
+    <div class="title">Volleybrawl</div>
+
+    <div class="col" style="max-width: 900px;">
+      <div class="subtitle">How to play</div>
+      <div class="message" style="text-align:left;">
+        <div>1. Arrow keys to move/jump. Space to smack.</div>
+        <div>2. First to 5 points wins. You cannot cross the net.</div>
+        <div>3. The net lowers during long rallies and resets after a point.</div>
+      </div>
+    </div>
+
+    <div id="auth-status" class="message"></div>
+
+    <div id="signed-out" class="row" style="gap:40px;">
+      <div class="col" style="min-width: 340px;">
+        <div class="subtitle">Register</div>
+        <form id="register-form" class="col">
+          <input id="reg-username" placeholder="Username (1-20 length, letters/numbers/_)" minlength="1" maxlength="20" required>
+          <input id="reg-name" placeholder="Display name (1-20 length)" minlength="1" maxlength="20" required>
+          <input id="reg-password" type="password" placeholder="Password (min 1 length)" minlength="1" maxlength="64" required>
+          <button type="submit">Create account</button>
+          <div id="register-message" class="message"></div>
+        </form>
+      </div>
+
+      <div class="col" style="min-width: 340px;">
+        <div class="subtitle">Sign in</div>
+        <form id="signin-form" class="col">
+          <input id="signin-username" placeholder="Username" maxlength="20" required>
+          <input id="signin-password" type="password" placeholder="Password" maxlength="64" required>
+          <button type="submit">Sign in</button>
+          <div id="signin-message" class="message"></div>
+        </form>
+      </div>
+    </div>
+
+    <div id="signed-in" class="col" style="display:none;">
+      <div class="message">
+        Signed in as <b id="whoami"></b>
+      </div>
+      <div class="row">
+        <button id="play-button" type="button">Enter Lobby</button>
+        <button id="signout-button" type="button">Sign out</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "u1": {
+    "name": "User One",
+    "password": "$argon2id$v=19$m=65536,t=3,p=4$qYaloGizn2HpgYzqMJ90nQ$qKgKrkRoV2EbZOxXuoaJ3EBEcxi4el/kuWmO3FGEdfg"
+  },
+  "u2": {
+    "name": "user2",
+    "password": "$argon2id$v=19$m=65536,t=3,p=4$95RmQipPN6dkiFtNiFSi0g$s112HCzKbgW2Z1J7xoNTp0D32jnVT9wQOigQYef/KaU"
+  },
+  "u3": {
+    "name": "user3",
+    "password": "$argon2id$v=19$m=65536,t=3,p=4$owzCvh7ffDG2rry5yxRn1g$4cFgQFxAlMuLHXvtJiC6Ge/RGLRwRaL4J//KXlGPeJ4"
+  }
+}

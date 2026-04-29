@@ -1,60 +1,113 @@
-const express = require("express");
+const path = require("path");
 
 // Additional packages for handling authentication
 const argon2 = require("argon2");
 const fs = require("fs");
-const session = require("express-session");
 
-// Create the Express app
-const app = express();
+const USERS_JSON_PATH = path.join(__dirname, "..", "data", "users.json");
 
-// Use the 'public' folder to serve static files
-app.use(express.static("public"));
+/**
+ * @returns {Record<string, { name: string, password: string }>}
+ */
+function readUsers() {
+	if (!fs.existsSync(USERS_JSON_PATH)) {
+		fs.mkdirSync(path.dirname(USERS_JSON_PATH), { recursive: true });
+		fs.writeFileSync(USERS_JSON_PATH, "{}", "utf-8");
+		return {};
+	}
 
-// Use the json middleware to parse JSON data
-app.use(express.json());
+	const raw = fs.readFileSync(USERS_JSON_PATH, "utf-8").trim();
+	if (raw === "") {
+		fs.writeFileSync(USERS_JSON_PATH, "{}", "utf-8");
+		return {};
+	}
 
-// Use the session middleware to maintain sessions
-const gameSession = session({
-    secret: "game",
-    resave: false,
-    saveUninitialized: false,
-    rolling: true,
-    cookie: { maxAge: 300000 }
-});
-app.use(gameSession);
+	try {
+		const parsed = JSON.parse(raw);
+		if (parsed && typeof parsed === "object") return parsed;
+	} catch {
+		// fall through to reset file
+	}
+
+	fs.writeFileSync(USERS_JSON_PATH, "{}", "utf-8");
+	return {};
+}
+
+/**
+ * @param {Record<string, { name: string, password: string }>} users
+ */
+function writeUsers(users) {
+	fs.mkdirSync(path.dirname(USERS_JSON_PATH), { recursive: true });
+	fs.writeFileSync(USERS_JSON_PATH, JSON.stringify(users, null, 2), "utf-8");
+}
 
 // This helper function checks whether the text only contains word characters
 function containWordCharsOnly(text) {
     return /^\w+$/.test(text);
 }
 
-// Handle the /register endpoint
-app.post("/register", async (req, res) => {
+const USERNAME_MIN_LEN = 1;
+const USERNAME_MAX_LEN = 20;
+const DISPLAY_NAME_MIN_LEN = 1;
+const DISPLAY_NAME_MAX_LEN = 20;
+const PASSWORD_MIN_LEN = 1;
+const PASSWORD_MAX_LEN = 64;
+
+function isString(x) {
+	return typeof x === "string";
+}
+
+function isWhitespaceOnly(s) {
+	return /^\s+$/.test(s);
+}
+
+/**
+ * Handle the /register endpoint.
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
+async function register(req, res) {
     //
     // C. Reading the json input
     //
 
     // Get the JSON data from the body
-    const { username, avatar, name, password } = req.body;
+    const { username, name, password } = req.body;
 
     //
     // D. Reading the users.json file
     //
 
     // Add your code here
-    const users = JSON.parse(fs.readFileSync("./data/users.json", "utf-8"));
+    const users = readUsers();
     
     //
     // E. Checking for the user data correctness
     //
     
     // Add your code here
-    if (username == "" || avatar == "" || name == "" || password == "") {
-        res.json({ error: "Username/avatar/name/password cannot be empty." });
+    if (!isString(username) || !isString(name) || !isString(password)) {
+        res.json({ error: "Invalid input type." });
+        return;
+    }
+
+    if (username === "" || name === "" || password === "") {
+        res.json({ error: "Username/name/password cannot be empty." });
+        return;
+    } else if (name !== "" && isWhitespaceOnly(name)) {
+        res.json({ error: "Display name cannot be whitespace only." });
+        return;
+    } else if (username.length < USERNAME_MIN_LEN || username.length > USERNAME_MAX_LEN) {
+        res.json({ error: `Username length must be ${USERNAME_MIN_LEN}-${USERNAME_MAX_LEN}.` });
         return;
     } else if (!containWordCharsOnly(username)) {
         res.json({ error: "Username can only contain underscores, letters or numbers." });
+        return;
+    } else if (name.length < DISPLAY_NAME_MIN_LEN || name.length > DISPLAY_NAME_MAX_LEN) {
+        res.json({ error: `Display name length must be ${DISPLAY_NAME_MIN_LEN}-${DISPLAY_NAME_MAX_LEN}.` });
+        return;
+    } else if (password.length < PASSWORD_MIN_LEN || password.length > PASSWORD_MAX_LEN) {
+        res.json({ error: `Password length must be ${PASSWORD_MIN_LEN}-${PASSWORD_MAX_LEN}.` });
         return;
     } else if (username in users) {
         res.json({ error: "Username has already been used." });
@@ -69,24 +122,28 @@ app.post("/register", async (req, res) => {
     const hash = await argon2.hash(password);
 
     // Add your code here
-    users[username] = { avatar, name, password: hash };
+    users[username] = { name, password: hash };
 
     //
     // H. Saving the users.json file
     //
 
     // Add your code here
-    fs.writeFileSync("./data/users.json", JSON.stringify(users, null, 2));
+    writeUsers(users);
 
     //
     // I. Sending a success response to the browser
     //
  
     res.json({ success: true });
-});
+}
 
-// Handle the /signin endpoint
-app.post("/signin", async (req, res) => {
+/**
+ * Handle the /signin endpoint.
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
+async function signin(req, res) {
     // Get the JSON data from the body
     const { username, password } = req.body;
 
@@ -95,7 +152,7 @@ app.post("/signin", async (req, res) => {
     //
 
     // Add your code here
-    const users = JSON.parse(fs.readFileSync("./data/users.json", "utf-8"));
+    const users = readUsers();
 
     //
     // E. Checking for username/password
@@ -104,6 +161,16 @@ app.post("/signin", async (req, res) => {
     // Add your code here
 
     // REPLACE THIS CODE WITH YOUR CODE
+    if (!isString(username) || !isString(password)) {
+        res.json({ error: "Invalid input type." });
+        return;
+    }
+
+    if (username === "" || password === "") {
+        res.json({ error: "Username/password cannot be empty." });
+        return;
+    }
+
     if (!(username in users)) {
         res.json({ error: "Incorrect username/password." });
         return;
@@ -124,16 +191,18 @@ app.post("/signin", async (req, res) => {
     // Add your code here
     req.session.user = {
         username,
-        avatar: users[username].avatar,
         name: users[username].name
     }
  
     res.json({ user: req.session.user });
-});
+}
 
-// Handle the /validate endpoint
-app.get("/validate", (req, res) => {
-
+/**
+ * Handle the /validate endpoint.
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
+function validate(req, res) {
     //
     // B. Getting req.session.user
     //
@@ -150,11 +219,14 @@ app.get("/validate", (req, res) => {
     //
 
     res.json({ user: req.session.user });
-});
+}
 
-// Handle the /signout endpoint
-app.get("/signout", (req, res) => {
-
+/**
+ * Handle the /signout endpoint.
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ */
+function signout(req, res) {
     //
     // Deleting req.session.user
     //
@@ -169,9 +241,6 @@ app.get("/signout", (req, res) => {
     //
 
     res.json({ success: true });
-});
+}
 
-// Use a web server to listen at port 8000
-app.listen(8000, () => {
-    console.log("The game server has started...");
-});
+module.exports = { register, signin, validate, signout };
