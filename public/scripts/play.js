@@ -2,6 +2,7 @@ import { drawGameFrame } from "./renderer.js";
 
 const game = (function () {
 	const socket = io();
+	let isNavigatingAway = false;
 
 	// Prevent double-adding socket event listeners
 	let hasEnteredRoomListingPageBefore = false;
@@ -21,6 +22,15 @@ const game = (function () {
 		return (fromBoot || fromSessionStorage).trim();
 	}
 
+	function goHome(event) {
+		if (event) {
+			event.preventDefault();
+			event.stopPropagation();
+		}
+		isNavigatingAway = true;
+		window.location.assign("/");
+	}
+
 	const initConnectPage = function () {
 		$("#connect-message").text("");
 
@@ -36,12 +46,12 @@ const game = (function () {
 		});
 
 		socket.on("disconnect", () => {
+			if (isNavigatingAway) return;
 			window.location.reload();
 		});
 
-		$("#back-home-button").on("click", async function () {
-			// optional: keep session, just navigate home
-			window.location.href = "/";
+		$("#back-home-button").on("click", function (event) {
+			goHome(event);
 		});
 	};
 
@@ -214,8 +224,8 @@ const game = (function () {
 				initRoomListingPage();
 			});
 
-			$("#back-home-from-game-button").on("click", function () {
-				window.location.href = "/";
+			$("#back-home-from-game-button").on("click", function (event) {
+				goHome(event);
 			});
 		}
 
