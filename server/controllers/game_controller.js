@@ -162,9 +162,22 @@ function handlePlayerReady(socket, resetState){
 			game.gameLoopIntervalID = null;
 		}
 		
-		getIO().to(game.gameID).emit("start_game");
+		const playerNames = getPlayerNames(game);
+		getIO().to(game.gameID).emit("start_game", { playerNames });
 		startRound(game);
 	}
+}
+
+/**
+ * @param {Game} game
+ * @returns {{ player1: string, player2: string }}
+ */
+function getPlayerNames(game) {
+	const playerNames = { player1: "", player2: "" };
+	for (const player of Object.values(game.players)) {
+		playerNames[player.playerID] = player.name;
+	}
+	return playerNames;
 }
 
 /**
@@ -267,8 +280,9 @@ function processGameEnd(game){
 	}
 	
 	const statistics = game.state.statistics;
+	const playerNames = getPlayerNames(game);
 
-	getIO().to(game.gameID).emit("game_end", statistics);
+	getIO().to(game.gameID).emit("game_end", { statistics, playerNames });
 }
 
 /**

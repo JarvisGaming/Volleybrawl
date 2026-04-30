@@ -1,45 +1,5 @@
-const path = require("path");
-
-// Additional packages for handling authentication
 const argon2 = require("argon2");
-const fs = require("fs");
-
-const USERS_JSON_PATH = path.join(__dirname, "..", "data", "users.json");
-
-/**
- * @returns {Record<string, { name: string, password: string }>}
- */
-function readUsers() {
-	if (!fs.existsSync(USERS_JSON_PATH)) {
-		fs.mkdirSync(path.dirname(USERS_JSON_PATH), { recursive: true });
-		fs.writeFileSync(USERS_JSON_PATH, "{}", "utf-8");
-		return {};
-	}
-
-	const raw = fs.readFileSync(USERS_JSON_PATH, "utf-8").trim();
-	if (raw === "") {
-		fs.writeFileSync(USERS_JSON_PATH, "{}", "utf-8");
-		return {};
-	}
-
-	try {
-		const parsed = JSON.parse(raw);
-		if (parsed && typeof parsed === "object") return parsed;
-	} catch {
-		// fall through to reset file
-	}
-
-	fs.writeFileSync(USERS_JSON_PATH, "{}", "utf-8");
-	return {};
-}
-
-/**
- * @param {Record<string, { name: string, password: string }>} users
- */
-function writeUsers(users) {
-	fs.mkdirSync(path.dirname(USERS_JSON_PATH), { recursive: true });
-	fs.writeFileSync(USERS_JSON_PATH, JSON.stringify(users, null, 2), "utf-8");
-}
+const userModel = require("../models/user_model.js");
 
 // This helper function checks whether the text only contains word characters
 function containWordCharsOnly(text) {
@@ -79,7 +39,7 @@ async function register(req, res) {
     //
 
     // Add your code here
-    const users = readUsers();
+    const users = userModel.getUsers();
     
     //
     // E. Checking for the user data correctness
@@ -129,7 +89,7 @@ async function register(req, res) {
     //
 
     // Add your code here
-    writeUsers(users);
+    userModel.saveUsers(users);
 
     //
     // I. Sending a success response to the browser
@@ -152,7 +112,7 @@ async function signin(req, res) {
     //
 
     // Add your code here
-    const users = readUsers();
+    const users = userModel.getUsers();
 
     //
     // E. Checking for username/password

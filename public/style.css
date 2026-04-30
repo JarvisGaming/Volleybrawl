@@ -33,6 +33,25 @@ button {
     text-align: center;
 }
 
+#game-score {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.left-name-score-gap {
+    margin-right: 16px;
+}
+
+.right-name-score-gap {
+    margin-left: 16px;
+}
+
+.score-separator {
+    margin: 0 2px;
+}
+
 .message {
     text-align: center;
     font-style: italic;
@@ -125,10 +144,67 @@ form button {
     border: 2px solid black;
     width: 50vw;
     height: calc(50vw * 0.75);
+    display: block;
+}
+
+#game-canvas-wrapper {
+    position: relative;
+    width: 50vw;
+    height: calc(50vw * 0.75);
     align-self: center;
 }
 
 #game-buttons {
     display: flex;
     justify-content: center;
+}
+
+#game-over-panel {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(760px, 46vw);
+    max-height: 90%;
+    overflow: auto;
+    border: 2px solid black;
+    padding: 12px;
+    background: rgba(247, 247, 247, 0.97);
+    z-index: 2;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.game-over-sections {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 16px;
+    align-items: start;
+}
+
+.game-over-card {
+    background: white;
+    border: 1px solid #ddd;
+    padding: 10px;
+}
+
+.game-over-heading {
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+#ranking-list {
+    margin: 0;
+    padding-left: 22px;
+}
+
+#stats-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#stats-table th,
+#stats-table td {
+    border: 1px solid #ddd;
+    padding: 6px 8px;
+    text-align: center;
 }

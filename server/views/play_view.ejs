@@ -48,16 +48,46 @@
 
   <!-- The game page -->
   <div id="game-page" style="display: none">
-    <div class="title">Game Page</div>
-    <div id="game-score" class="subtitle"><span id="player1-score">0</span> - <span id="player2-score">0</span></div>
+    <div id="game-score" class="subtitle">
+      <span id="player1-name-label" class="left-name-score-gap">(Player 1)</span><span id="player1-score">0</span>
+      <span class="score-separator">-</span>
+      <span id="player2-score">0</span><span id="player2-name-label" class="right-name-score-gap">(Player 2)</span>
+    </div>
     <div id="game-message" class="message"></div>
 
     <div id="game-buttons" style="display: none">
       <button id="restart-game-button" type="button">Restart Game</button>
       <button id="return-to-lobby-button" type="button">Return to Lobby</button>
+      <button id="back-home-from-game-button" type="button">Back to Home</button>
     </div>
 
-    <canvas id="game-canvas" width="800" height="600"></canvas>
+    <div id="game-canvas-wrapper">
+      <canvas id="game-canvas" width="800" height="600"></canvas>
+
+      <div id="game-over-panel" style="display:none;">
+        <div id="game-over-title" class="subtitle">Game Over</div>
+        <div class="game-over-sections">
+          <div class="game-over-card">
+            <div class="game-over-heading">Ranking (by Score)</div>
+            <ol id="ranking-list"></ol>
+          </div>
+          <div class="game-over-card">
+            <div class="game-over-heading">Player Statistics</div>
+            <table id="stats-table">
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>Score</th>
+                  <th>Jumps</th>
+                  <th>Successful Smacks</th>
+                </tr>
+              </thead>
+              <tbody id="stats-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
 </body>

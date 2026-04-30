@@ -126,10 +126,62 @@ const game = (function () {
 
   const initGamePage = function () {
     const playerInputs = new Set();
+    let latestPlayerNames = { player1: "Player 1", player2: "Player 2" };
 
     function hideMessageAndButtons() {
       $("#game-message").text("");
       $("#game-buttons").hide();
+      $("#game-over-panel").hide();
+    }
+
+    function updateScoreLabels() {
+      $("#player1-name-label").text(latestPlayerNames.player1 || "Player 1");
+      $("#player2-name-label").text(latestPlayerNames.player2 || "Player 2");
+    }
+
+    function renderGameOver({ statistics, playerNames }) {
+      latestPlayerNames = {
+        player1: playerNames?.player1 || "Player 1",
+        player2: playerNames?.player2 || "Player 2",
+      };
+      updateScoreLabels();
+
+      const rows = ["player1", "player2"].map((playerID) => ({
+        playerID,
+        name: playerNames?.[playerID] || playerID,
+        score: statistics[playerID].score,
+        jumps: statistics[playerID].numJumps,
+        smacks: statistics[playerID].numSmacks,
+      }));
+
+      const ranking = [...rows].sort((a, b) => b.score - a.score);
+      $("#ranking-list").empty();
+      for (const player of ranking) {
+        $("#ranking-list").append(`<li>${player.name} (${player.score} pts)</li>`);
+      }
+
+      $("#stats-table-body").empty();
+      for (const player of ranking) {
+        $("#stats-table-body").append(`
+          <tr>
+            <td>${player.name}</td>
+            <td>${player.score}</td>
+            <td>${player.jumps}</td>
+            <td>${player.smacks}</td>
+          </tr>
+        `);
+      }
+
+      const me = getPlayerName();
+      const meRow = rows.find((r) => r.name === me);
+      const otherRow = rows.find((r) => r.name !== me);
+      if (meRow && otherRow) {
+        $("#game-over-title").text(meRow.score > otherRow.score ? "You Win!" : "You Lose!");
+      } else {
+        $("#game-over-title").text("Game Over");
+      }
+
+      $("#game-over-panel").show();
     }
 
     function setEventListeners() {
@@ -161,6 +213,10 @@ const game = (function () {
         $("#room-listing-page").show();
         initRoomListingPage();
       });
+
+      $("#back-home-from-game-button").on("click", function () {
+        window.location.href = "/";
+      });
     }
 
     if (!hasEnteredGamePageBefore) {
@@ -170,9 +226,16 @@ const game = (function () {
         $("#game-message").text(msg);
       });
 
-      socket.on("start_game", () => {
+      socket.on("start_game", (payload) => {
         hideMessageAndButtons();
         setEventListeners();
+        if (payload?.playerNames) {
+          latestPlayerNames = {
+            player1: payload.playerNames.player1 || "Player 1",
+            player2: payload.playerNames.player2 || "Player 2",
+          };
+        }
+        updateScoreLabels();
         $("#player1-score").text(0);
         $("#player2-score").text(0);
       });
@@ -190,8 +253,9 @@ const game = (function () {
         $("#player2-score").text(player2Score);
       });
 
-      socket.on("game_end", (statistics) => {
-        $("#game-message").text(JSON.stringify(statistics));
+      socket.on("game_end", (payload) => {
+        renderGameOver(payload);
+        $("#game-message").text("");
         $("#game-buttons").show();
       });
 
