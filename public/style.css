@@ -81,7 +81,7 @@ body {
 /* Join page */
 
 form {
-    align-items: stretch !important;
+    align-items: stretch;
 }
 
 form input, form select {
