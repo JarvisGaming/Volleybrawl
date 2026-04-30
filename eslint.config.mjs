@@ -11,6 +11,8 @@ const customGlobals = {
 	io: 'readonly',
 	require: 'readonly',
 	module: 'readonly',
+	__dirname: 'readonly',
+	__filename: 'readonly',
 };
 
 export default defineConfig([
