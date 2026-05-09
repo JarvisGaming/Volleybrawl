@@ -8,6 +8,11 @@ button {
     padding: 20px;
 }
 
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
 /* Please for the love of god use display: grid instead */
 .row, .col {
     display: flex;

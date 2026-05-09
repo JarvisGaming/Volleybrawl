@@ -143,6 +143,8 @@ const game = (function () {
 		let renderAnimationFrameID = null;
 		let overlayTimeoutIDs = [];
 		let bgmResumeTimeoutID = null;
+		let bgmLoopHandlerAttached = false;
+		let bgmShouldPlay = false;
 
 		const soundIDs = {
 			bgm: "bgm-audio",
@@ -169,18 +171,35 @@ const game = (function () {
 			if (promise) promise.catch(() => {});
 		}
 
+		function ensureBgmLoopHandler() {
+			const bgm = getAudio("bgm");
+			if (!bgm || bgmLoopHandlerAttached) return;
+			bgmLoopHandlerAttached = true;
+			bgm.loop = true;
+			bgm.addEventListener("ended", () => {
+				if (!audioUnlocked || !bgmShouldPlay) return;
+				bgm.currentTime = 0;
+				const promise = bgm.play();
+				if (promise) promise.catch(() => {});
+			});
+		}
+
 		function startBgm() {
 			const bgm = getAudio("bgm");
 			if (!bgm) return;
+			ensureBgmLoopHandler();
+			bgmShouldPlay = true;
 			bgm.volume = 0.32;
 			bgm.loop = true;
-			if (!bgm.paused) return;
+			if (!bgm.paused && !bgm.ended) return;
+			if (bgm.ended) bgm.currentTime = 0;
 			const promise = bgm.play();
 			if (promise) promise.catch(() => {});
 		}
 
 		function stopBgm() {
 			const bgm = getAudio("bgm");
+			bgmShouldPlay = false;
 			if (!bgm) return;
 			bgm.pause();
 			bgm.currentTime = 0;
@@ -255,8 +274,23 @@ const game = (function () {
 			}, durationMilli));
 		}
 
+		function resetGameButtons() {
+			$("#restart-game-button").prop("disabled", false).text("Restart Game");
+			$("#return-to-lobby-button").prop("disabled", false);
+			$("#back-home-from-game-button").prop("disabled", false);
+		}
+
+		function markRestartRequested() {
+			$("#restart-game-button").prop("disabled", true).text("Restart Requested");
+		}
+
+		function markRestartUnavailable() {
+			$("#restart-game-button").prop("disabled", true).text("Restart Unavailable");
+		}
+
 		function hideMessageAndButtons() {
 			$("#game-message").text("");
+			resetGameButtons();
 			$("#game-buttons").hide();
 			$("#game-over-panel").hide();
 			hideRoundOverlay();
@@ -376,10 +410,12 @@ const game = (function () {
 			window.addEventListener("keyup", keyUpHandler);
 
 			$("#restart-game-button").on("click", function () {
+				if ($(this).prop("disabled")) return;
 				unlockAudio();
 				socket.emit("restart_ready");
 				$("#game-message").text("Waiting for opponent to restart...");
-				$("#game-buttons").hide();
+				markRestartRequested();
+				$("#game-buttons").show();
 			});
 
 			$("#return-to-lobby-button").on("click", function () {
@@ -497,6 +533,7 @@ const game = (function () {
 			socket.on("game_end", (payload) => {
 				renderGameOver(payload);
 				$("#game-message").text("");
+				resetGameButtons();
 				$("#game-buttons").show();
 			});
 
@@ -505,6 +542,7 @@ const game = (function () {
 				stopBgm();
 				hideRoundOverlay();
 				$("#game-message").text("Opponent disconnected.");
+				markRestartUnavailable();
 				$("#game-buttons").show();
 			});
 		}
