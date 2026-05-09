@@ -7,6 +7,10 @@ const PLAYER_GRAVITY = 1.5;
 const BALL_GRAVITY = 1;
 const BALL_PLAYER_CONTACT_VELOCITY = 25;
 const BALL_PLAYER_SMACK_VELOCITY = 40;
+const BALL_CHEAT_CONTACT_VELOCITY = 52;
+const BALL_CHEAT_SMACK_VELOCITY = 76;
+const SMACK_EFFECT_MILLI = 180;
+const CONTACT_SOUND_COOLDOWN_MILLI = 220;
 
 function distance(pos1, pos2){ return Math.sqrt((pos1.x - pos2.x) ** 2 + (pos1.y - pos2.y) ** 2); }
 
@@ -70,6 +74,24 @@ function player2Scored(ballPosition){ return isGrounded(ballPosition, BALL_RADIU
 
 function isTouching(playerPosition, ballPosition){ return distance(playerPosition, ballPosition) < PLAYER_RADIUS + BALL_RADIUS; }
 
+function queueSound(gameState, type, playerID){
+	if (!Array.isArray(gameState.soundEvents)) return;
+	gameState.soundEvents.push({ type, playerID, time: Date.now() });
+}
+
+function queueContactSound(gameState, playerID){
+	if (!gameState.lastContactSound) return;
+	const now = Date.now();
+	if (now - gameState.lastContactSound[playerID] < CONTACT_SOUND_COOLDOWN_MILLI) return;
+	gameState.lastContactSound[playerID] = now;
+	queueSound(gameState, "hit", playerID);
+}
+
+function markSmackEffect(gameState, playerID){
+	if (!gameState.visualState?.smackEffectUntil) return;
+	gameState.visualState.smackEffectUntil[playerID] = Date.now() + SMACK_EFFECT_MILLI;
+}
+
 /**
  * Update the velocities of all game objects.
  * Also updated relevant player statistics.
@@ -100,8 +122,14 @@ function updatePlayerPhysics(inputs, positions, gameState) {
 		const inputSet = inputs[playerID];
 
 		// Handle horizontal movement
-		if (isMovingLeft(inputSet)) positions[playerID].dx -= PLAYER_HORIZONTAL_SPEED;
-		if (isMovingRight(inputSet)) positions[playerID].dx += PLAYER_HORIZONTAL_SPEED;
+		if (isMovingLeft(inputSet)) {
+			positions[playerID].dx -= PLAYER_HORIZONTAL_SPEED;
+			if (gameState.visualState?.facing) gameState.visualState.facing[playerID] = "left";
+		}
+		if (isMovingRight(inputSet)) {
+			positions[playerID].dx += PLAYER_HORIZONTAL_SPEED;
+			if (gameState.visualState?.facing) gameState.visualState.facing[playerID] = "right";
+		}
 
 		// Friction
 		positions[playerID].dx *= FRICTION_COEFFICIENT;
@@ -148,6 +176,7 @@ function updateBallPhysics(inputs, positions, gameState) {
 	for (const playerID of ["player1", "player2"]) {
 		const playerPosition = positions[playerID];
 		const ballPosition = positions.ball;
+		const cheatEnabled = gameState.cheatMode?.[playerID] === true;
 
 		function updateBallSmackVelocity(totalVelocity) {
 			// Calculate angle between player and ball
@@ -158,18 +187,23 @@ function updateBallPhysics(inputs, positions, gameState) {
 			ballPosition.dy = totalVelocity * Math.sin(angle);
 		}
 
+		const canSmackNow = isSmacking(inputs[playerID]) && !isSmackOnCooldown(gameState.lastSmack[playerID]);
+
 		if (isTouching(playerPosition, ballPosition)) {
-			updateBallSmackVelocity(BALL_PLAYER_CONTACT_VELOCITY);
+			updateBallSmackVelocity(cheatEnabled ? BALL_CHEAT_CONTACT_VELOCITY : BALL_PLAYER_CONTACT_VELOCITY);
+			if (!canSmackNow) queueContactSound(gameState, playerID);
 		}
 
 		// Player smacking off cooldown
-		if (isSmacking(inputs[playerID]) && !isSmackOnCooldown(gameState.lastSmack[playerID])) {
+		if (canSmackNow) {
 			// Apply smack cooldown, regardless of whether the player hit the ball
 			gameState.lastSmack[playerID] = Date.now();
+			markSmackEffect(gameState, playerID);
 
 			if (isSmackSuccessful(playerPosition, ballPosition)) {
-				updateBallSmackVelocity(BALL_PLAYER_SMACK_VELOCITY);
+				updateBallSmackVelocity(cheatEnabled ? BALL_CHEAT_SMACK_VELOCITY : BALL_PLAYER_SMACK_VELOCITY);
 				gameState.statistics[playerID].numSmacks++;
+				queueSound(gameState, "smack", playerID);
 			}
 		}
 	}

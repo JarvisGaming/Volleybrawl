@@ -54,6 +54,10 @@
       <span id="player2-score">0</span><span id="player2-name-label" class="right-name-score-gap">(Player 2)</span>
     </div>
     <div id="game-message" class="message"></div>
+    <div id="cheat-panel" class="cheat-panel cheat-off">
+      <span id="cheat-status">Cheat mode: OFF</span>
+      <span class="cheat-help">Press F to toggle, P to award yourself a point.</span>
+    </div>
 
     <div id="game-buttons" style="display: none">
       <button id="restart-game-button" type="button">Restart Game</button>
@@ -63,6 +67,14 @@
 
     <div id="game-canvas-wrapper">
       <canvas id="game-canvas" width="800" height="600"></canvas>
+
+      <div id="round-overlay" class="round-overlay" style="display:none;">
+        <div class="round-overlay-card">
+          <div id="round-overlay-title" class="round-overlay-title">Get Ready!</div>
+          <div id="round-overlay-count" class="round-overlay-count">3</div>
+          <div id="round-overlay-subtitle" class="round-overlay-subtitle">Match starts soon</div>
+        </div>
+      </div>
 
       <div id="game-over-panel" style="display:none;">
         <div id="game-over-title" class="subtitle">Game Over</div>
@@ -89,6 +101,15 @@
       </div>
     </div>
   </div>
+
+  <audio id="bgm-audio" src="/assets/sounds/bgm.mp3" preload="auto" loop></audio>
+  <audio id="smack-audio" src="/assets/sounds/smack.wav" preload="auto"></audio>
+  <audio id="hit-audio" src="/assets/sounds/hit.wav" preload="auto"></audio>
+  <audio id="point-audio" src="/assets/sounds/point.wav" preload="auto"></audio>
+  <audio id="cheat-audio" src="/assets/sounds/cheat.wav" preload="auto"></audio>
+  <audio id="game-over-audio" src="/assets/sounds/game_over.wav" preload="auto"></audio>
+  <audio id="countdown-audio" src="/assets/sounds/countdown.wav" preload="auto"></audio>
+  <audio id="go-audio" src="/assets/sounds/go.wav" preload="auto"></audio>
 
 </body>
 </html>
