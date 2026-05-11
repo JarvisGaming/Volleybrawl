@@ -1,22 +1,3 @@
 {
-  "1": {
-    "name": "jarvis1",
-    "password": "$argon2id$v=19$m=65536,t=3,p=4$lMsd91YFBEKe7KKV5M8z6A$HoD9555WTcfJd5B+RGB0wf/nY0JtQhHeNpGBDimkpbc"
-  },
-  "2": {
-    "name": "jarvis2",
-    "password": "$argon2id$v=19$m=65536,t=3,p=4$7CeT1MiuAIAohWV2gctyWw$PkiLgr/QyQImtd7XYVmDTfj1JAN3N3LC9EM6cpBEMCA"
-  },
-  "fix_c8ab3245_1": {
-    "name": "Fix P1",
-    "password": "$argon2id$v=19$m=65536,t=3,p=4$V4p0ytkzosJk6y2CS6spJA$q8Nx/FK1IltU8gYq1whng4NaxN6AxRjwJJWAJuPAMCM"
-  },
-  "u1": {
-    "name": "user1",
-    "password": "$argon2id$v=19$m=65536,t=3,p=4$ZY5cG55mH9yRSaxgptiXfw$4DjZz0PcGXztdg1Zu9Qeg9hF9Kmj7jE83fCsrlM/nzs"
-  },
-  "u2": {
-    "name": "user2",
-    "password": "$argon2id$v=19$m=65536,t=3,p=4$8UizZWBRqzLZRlcumEVUcw$pYh0YMOvqCKCUTc56UwLKYZD1yeeUIl4Rrnf8crIhb0"
-  }
+
 }
